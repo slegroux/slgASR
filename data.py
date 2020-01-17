@@ -27,25 +27,23 @@ lex = {
     'grapheme': None
 }
 
-def get_basename(filename):
+def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
     if bn[1] == '':
         return(bn[0])
     else:
         return(get_basename(bn[0]))
 
-def get_transcript(filename):
+def get_transcript(filename:str):
     with open(filename, 'r', encoding='utf-8') as f:
         return(f.read().strip())
 
 
-
-
 class Transcript(object):
-    def __init__(self, path):
+    def __init__(self, path:str):
         self._path = path
 
-    def _get_transcript(self, filename):
+    def _get_transcript(self, filename:str):
         with open(filename, 'r', encoding='utf-8') as f:
             return(f.read().strip())
 
@@ -58,18 +56,54 @@ class Transcript(object):
         return(self._get_transcript(self.path))
 
 
-class Transcripts(Transcript):
-    def __init__(self):
-        pass
+class DimexTranscript(Transcript):
+    def __init__(self, path:str):
+        Transcript.__init__(self, path)
+        self._language = 'spanish'
 
-    def _process_transcripts(regex, language, suffix=''):
+    @property
+    def language(self):
+        return(self._language)
+    
+    @property
+    def dialect(self):
+        return(self._dialect)
+
+    @property
+    def uid(self):
+        # add suffix since files in comunes & individuales can have same id
+        uid = get_basename(self._path)
+        suffix = '_' + self._path.split('/')[-2][0]
+        return(uid + suffix)
+
+    @property
+    def sid(self):
+        return(get_basename(self._path)[:4])
+    
+    @property
+    def info(self):
+        return    
+
+
+class DimexTranscripts(DimexTranscript):
+    def __init__(self, regex:str):
+        self._file_list = glob.glob(regex)
+
+    def _process_transcripts(regex:str, language:str, suffix:str=''):
         paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
+        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
+        return(df)
+    
+    @property
+    def df(self):
+        d = lambda x: DimexTranscript(x)
+        paths = [  (d(x).uid, d(x).sid, d(x).path, d(x).transcript, d(x).language) for x in self._file_list]    
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
         return(df)
 
 
 class WavFile(object):
-    def __init__(self, path):
+    def __init__(self, path:str):
         self._path = path
         self._format = 'wav'
     
@@ -92,7 +126,7 @@ class WavFile(object):
     def duration(self):
         return( self._get_wav_info(self._path)[1])
     
-    def _get_wav_info(self, filename):
+    def _get_wav_info(self, filename:str):
         with wave.open(filename, 'r') as f:
             n_frames = f.getnframes()
             frame_rate = f.getframerate()
@@ -101,7 +135,7 @@ class WavFile(object):
 
 
 class DimexSpeechFile(WavFile):
-    def __init__(self, path):
+    def __init__(self, path:str):
         WavFile.__init__(self, path)
         self._language = 'spanish'
         self._dialect = 'mexican'
@@ -131,8 +165,9 @@ class DimexSpeechFile(WavFile):
 
 
 class DimexSpeechFiles(DimexSpeechFile):
-    def __init__(self, regex):
+    def __init__(self, regex:str):
         self._file_list = glob.glob(regex)
+    
     @property
     def df(self):
         d = lambda x: DimexSpeechFile(x)

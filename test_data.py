@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 
+# to run tests:
+# pytest -p no:warnings -sv test_data.py
+
 import pytest
 from data import get_basename
 from data import WavFile, DimexSpeechFile, DimexSpeechFiles
-from data import Transcript, Transcripts
+from data import Transcript, DimexTranscript, DimexTranscripts
 from IPython import embed
 
 @pytest.fixture(scope="module")
 def data_():
     data = {
         'wavfile': 'test_data/dimex100/audio_16k/comunes/s05810.wav',
-        'regex_all_wavs': '/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/*/audio_16k/*/*.wav',
+        'regex_all_wavs': 'test_data/dimex100/audio_16k/*/*.wav',
         'transcript': 'test_data/dimex100/texto/comunes/s10001.txt.utf8',
-        'regex_all_transcripts': None
+        'regex_all_transcripts': 'test_data/dimex100/texto/*/*.txt.utf8'
         }
     return data
 
@@ -32,8 +35,18 @@ def test_dimex_file(data_):
 
 def test_dimex_files(data_):
     dimex_speech_df = DimexSpeechFiles(data_['regex_all_wavs']).df
-
-
+    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810_c', 's058', 'test_data/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
+    
 def test_transcript(data_):
     t = Transcript(data_['transcript']).transcript
     assert (t == u"Todos los productos y publicaciones de \"Adobe\" son de naturaleza comercial .")
+
+def test_dimex_transcript(data_):
+    t = DimexTranscript(data_['transcript']).transcript
+    assert (t == u"Todos los productos y publicaciones de \"Adobe\" son de naturaleza comercial .")
+
+def test_dimex_transcripts(data_):
+    dimex_transcripts_df = DimexTranscripts(data_['regex_all_transcripts']).df
+    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001_c', 's100', 'test_data/dimex100/texto/comunes/s10001.txt.utf8', \
+         'Todos los productos y publicaciones de "Adobe" son de naturaleza comercial .', 'spanish']
+    
