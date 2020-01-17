@@ -9,9 +9,9 @@ from IPython import embed
 @pytest.fixture(scope="module")
 def data_():
     data = {
-        'wavfile': 'test_data/s05810.wav',
+        'wavfile': 'test_data/dimex100/audio_16k/comunes/s05810.wav',
         'regex_all_wavs': '/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/*/audio_16k/*/*.wav',
-        'transcript': 'test_data/s10001.txt.utf8',
+        'transcript': 'test_data/dimex100/texto/comunes/s10001.txt.utf8',
         'regex_all_transcripts': None
         }
     return data
