@@ -38,38 +38,113 @@ def get_transcript(filename):
     with open(filename, 'r', encoding='utf-8') as f:
         return(f.read().strip())
 
-def get_wav_info(filename):
-    with wave.open(filename, 'r') as f:
-        n_frames = f.getnframes()
-        frame_rate = f.getframerate()
-        duration  = n_frames / float(frame_rate)
-    return(frame_rate, duration)
 
 
-def process_transcripts(regex, language, suffix=''):
 
-    paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
-    df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
-    return(df)
+class Transcript(object):
+    def __init__(self, path):
+        self._path = path
+
+    def _get_transcript(self, filename):
+        with open(filename, 'r', encoding='utf-8') as f:
+            return(f.read().strip())
+
+    @property
+    def path(self):
+        return(self._path)
+
+    @property
+    def transcript(self):
+        return(self._get_transcript(self.path))
 
 
-def process_audio(regex, language, dialect=None, format='wav', suffix=''):
-    uid = lambda x: get_basename(x) + suffix
-    sid = lambda x: get_basename(x)[:4]
-    path = lambda x: os.path.abspath(x)
-    sr = lambda x: get_wav_info(os.path.abspath(x))[0]
-    duration = lambda x: get_wav_info(os.path.abspath(x))[1]
+class Transcripts(Transcript):
+    def __init__(self):
+        pass
 
-    paths = [ (uid(x), sid(x), path(x), sr(x), duration(x), format, language, dialect) for x in glob.glob(regex)]
-    df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'sr', 'duration', 'format', 'language','dialect'])
-    return(df)
+    def _process_transcripts(regex, language, suffix=''):
+        paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
+        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
+        return(df)
+
+
+class WavFile(object):
+    def __init__(self, path):
+        self._path = path
+        self._format = 'wav'
+    
+    def uid(self):
+        pass
+    
+    @property
+    def path(self):
+        return(self._path)
+    
+    @property
+    def format(self):
+        return(self._format)
+
+    @property
+    def sr(self):
+        return( self._get_wav_info(self._path)[0])
+    
+    @property
+    def duration(self):
+        return( self._get_wav_info(self._path)[1])
+    
+    def _get_wav_info(self, filename):
+        with wave.open(filename, 'r') as f:
+            n_frames = f.getnframes()
+            frame_rate = f.getframerate()
+            duration  = n_frames / float(frame_rate)
+        return(frame_rate, duration)
+
+
+class DimexSpeechFile(WavFile):
+    def __init__(self, path):
+        WavFile.__init__(self, path)
+        self._language = 'spanish'
+        self._dialect = 'mexican'
+
+    @property
+    def language(self):
+        return(self._language)
+    
+    @property
+    def dialect(self):
+        return(self._dialect)
+
+    @property
+    def uid(self):
+        # add suffix since files in comunes & individuales can have same id
+        uid = get_basename(self._path)
+        suffix = '_' + self._path.split('/')[-2][0]
+        return(uid + suffix)
+
+    @property
+    def sid(self):
+        return(get_basename(self._path)[:4])
+    
+    @property
+    def info(self):
+        return
+
+
+class DimexSpeechFiles(DimexSpeechFile):
+    def __init__(self, regex):
+        self._file_list = glob.glob(regex)
+    @property
+    def df(self):
+        d = lambda x: DimexSpeechFile(x)
+        paths = [  (d(x).uid, d(x).sid, d(x).path, d(x).sr, d(x).duration, d(x).format, d(x).language, d(x).dialect) for x in self._file_list]    
+        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'sr', 'duration', 'format', 'language','dialect'])
+        return(df)
+        
+
 
 
 if __name__ == "__main__":
-    # basic tests
-    print(get_basename('/toto/test.txt.utf.totot'))
-    print(get_wav_info('/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/s058/audio_16k/comunes/s05810.wav')[0])
-
+    
     # read heroico
     
     answers = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/transcripts/heroico-answers.txt'
@@ -78,8 +153,9 @@ if __name__ == "__main__":
 
     native_regex = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/speech/usma/native*/*.wav'
     nonnative_regex = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/speech/usma/nonnative*/*.wav'
+
     
-    # read dimex
+"""     # read dimex
     regex = '/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/*/*/comunes/*.txt.utf8'
     transcript_c = process_transcripts(regex, 'es', suffix='_c')
     regex = '/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/*/*/individuales/*.txt.utf8'
@@ -103,4 +179,4 @@ if __name__ == "__main__":
     individuales = sqldf(q_i, locals())
     comunes = sqldf(q_c, locals())
     union = sqldf(q_union, locals())
-    print(union.head())
+    print(union.head()) """
