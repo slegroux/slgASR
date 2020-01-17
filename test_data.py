@@ -4,9 +4,8 @@
 # pytest -p no:warnings -sv test_data.py
 
 import pytest
-from data import get_basename
-from data import WavFile, DimexSpeechFile, DimexSpeechFiles
-from data import Transcript, DimexTranscript, DimexTranscripts
+from data import get_basename, get_transcript, Transcript, WavFile
+from data_dimex import DimexSpeechFile, DimexSpeechFiles, DimexTranscript, DimexTranscripts
 from IPython import embed
 
 @pytest.fixture(scope="module")
