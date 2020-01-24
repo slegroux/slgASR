@@ -4,8 +4,9 @@
 # pytest -p no:warnings -sv test_data.py
 
 import pytest
-from data import get_basename, get_transcript, Transcript, WavFile
-from data_dimex import DimexSpeechFile, DimexSpeechFiles, DimexTranscript, DimexTranscripts
+from data import get_basename, get_transcript, Transcript, WavFile, WavFiles
+from data_dimex import DimexWavFile, DimexTranscript, DimexTranscripts
+from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from IPython import embed
 
 @pytest.fixture(scope="module")
@@ -27,14 +28,15 @@ def test_wav_file(data_):
     assert (w.path, w.sr, w.duration) == (data_['wavfile'], 16000, 3.5403125)
 
 def test_dimex_file(data_):
-    d = DimexSpeechFile(data_['wavfile'])
+    d = DimexWavFile(data_['wavfile'])
     assert (d.uid, d.sid, d.path, d.sr, d.duration, d.format, d.language, d.dialect) == \
-        ('s05810_c', 's058', data_['wavfile'],
+        ('s05810', 's058', data_['wavfile'],
          16000, 3.5403125, 'wav', 'spanish', 'mexican')
 
 def test_dimex_files(data_):
-    dimex_speech_df = DimexSpeechFiles(data_['regex_all_wavs']).df
-    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810_c', 's058', 'test_data/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
+    #dimex_speech_df = DimexSpeechFiles(data_['regex_all_wavs']).df
+    dimex_speech_df = WavFiles(data_['regex_all_wavs'], DimexWavFile).df
+    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810', 's058', 'test_data/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
     
 def test_transcript(data_):
     t = Transcript(data_['transcript']).transcript
@@ -46,6 +48,37 @@ def test_dimex_transcript(data_):
 
 def test_dimex_transcripts(data_):
     dimex_transcripts_df = DimexTranscripts(data_['regex_all_transcripts']).df
-    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001_c', 's100', 'test_data/dimex100/texto/comunes/s10001.txt.utf8', \
+    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001', 's100', 'test_data/dimex100/texto/comunes/s10001.txt.utf8', \
          'Todos los productos y publicaciones de "Adobe" son de naturaleza comercial .', 'spanish']
-    
+
+
+@pytest.fixture(scope="module")
+def heroico_data():
+    data = {
+        'wavfile': 'test_data/heroico/speech/Recordings_Spanish/1/1.wav',
+        'regex_wavs_recordings': 'test_data/heroico/speech/Recordings_Spanish/*/*.wav',
+        'transcript': 'test_data/heroico/transcripts/heroico-recordings.txt'
+        }
+    return data
+
+def test_heroico_transcripts(heroico_data):
+    ht = HeroicoTranscripts(heroico_data['transcript']).df
+    assert ht.iloc[0].transcript == 'iturbide se auto nombró generalísimo de mar y tierra'
+
+def test_heroico_wav_file(heroico_data):
+    hfw = HeroicoWavFile(heroico_data['wavfile'])
+    assert (hfw.uid, hfw.sid, hfw.path) == ('1', '1', heroico_data['wavfile'])
+
+def test_heroico_wav_files(heroico_data):
+    heroico_df= WavFiles(heroico_data['regex_wavs_recordings'], HeroicoWavFile).df
+    assert heroico_df.iloc[0].values.tolist() == ['1', '1', \
+        'test_data/heroico/speech/Recordings_Spanish/1/1.wav', 22050, \
+        1.9127437641723355, 'wav', 'spanish','mexican']
+
+
+@pytest.fixture(scope="module")
+
+def common_voice_data():
+    data = {
+        'df': 'toto'
+        }
