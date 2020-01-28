@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import glob, os
 import wave
+from abc import ABC, abstractmethod
+import uuid
 from pandasql import sqldf
 from IPython import embed
 
@@ -120,6 +122,54 @@ class WavFiles(object):
             'sr', 'duration', 'format', 'language','dialect'])
         return(df)
 
+
+class ASRDataset(ABC):
+    
+    def __init__(self, audio_path, tr_path):
+        self._audio_path = audio_path
+        self._tr_path = tr_path
+        self._wav = None
+        self._tr = None
+        self._name = None
+        self._query = None
+    
+    @property
+    @abstractmethod
+    def wav(self):
+        pass
+
+    @property
+    @abstractmethod
+    def tr(self):
+        pass
+
+    @property
+    def query(self):
+        return(self._query)
+    
+    @query.setter
+    @abstractmethod
+    def query(self):
+        pass
+
+    @property
+    def df(self):
+        wav_df = self.wav
+        tr_df = self.tr
+        q_ans = self.query.format("wav_df", "tr_df")        
+        joined = sqldf(q_ans, locals())
+        self.add_uuid(joined)
+        self.add_table_name(joined, self._name)
+        return(joined)
+
+    def add_uuid(self, df):
+        df['uuid'] = [ uuid.uuid4() for i in range(len(df))] 
+
+    def add_table_name(self, df, name):
+        df['dataset_id'] = [name] * len(df)
+    
+    def pickle(self, path):
+        self.df.to_pickle(path)
 
 if __name__ == "__main__":
     pass    
