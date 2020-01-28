@@ -50,6 +50,7 @@ q_rec = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, 
 
 rec = sqldf(q_rec, locals())
 add_uuid(rec)
+rec.to_pickle('heroico_recordings.pkl')
 
 # for each question (uid) there are multiple answers by different speakers
 q_ans = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
@@ -58,8 +59,13 @@ q_ans = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, 
 
 ans = sqldf(q_ans, locals())
 add_uuid(ans)
+ans.to_pickle('heroico_answers.pkl')
 
 # USMA
+usma = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/transcripts/usma-prompts.txt'
+native_regex = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/speech/usma/native*/*.wav'
+nonnative_regex = '/home/workfit/Sylvain/Data/LDC/Heroico/LDC2006S37/data/speech/usma/nonnative*/*.wav'
+
 
 # DIMEX
 tr_reg_c = '/home/workfit/Sylvain/Data/Spanish/CorpusDimex100/*/*/comunes/*.txt.utf8'
@@ -73,7 +79,13 @@ w_i, t_i  = get_wav_tr_df(tr_reg_i, wav_reg_i, DimexWavFile, DimexTranscripts)
 q = build_join_query("w_c", "t_c")
 dimex_common = sqldf(q, locals())
 add_uuid(dimex_common)
+dimex_common.to_pickle('dimex_common.pkl')
 
-embed()
+q = build_join_query("w_i", "t_i")
+dimex_individual = sqldf(q, locals())
+add_uuid(dimex_individual)
+dimex_individual.to_pickle('dimex_individual.pkl')
+
+
 
 

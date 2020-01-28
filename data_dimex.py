@@ -3,10 +3,13 @@ from data import Transcript, WavFile, get_basename, get_transcript
 import pandas as pd
 import glob, os
 
+
 class DimexTranscript(Transcript):
     def __init__(self, path:str):
         Transcript.__init__(self, path)
         self._language = 'spanish'
+        self._dialect = 'mexican'
+        self._basename = get_basename(path)
 
     @property
     def language(self):
@@ -18,14 +21,11 @@ class DimexTranscript(Transcript):
 
     @property
     def uid(self):
-        # add suffix since files in comunes & individuales can have same id
-        uid = get_basename(self._path)
-        suffix = '_' + self._path.split('/')[-2][0]
-        return(uid + suffix)
+        return(self._basename)
 
     @property
     def sid(self):
-        return(get_basename(self._path)[:4])
+        return(self._basename[:4])
     
     @property
     def info(self):
@@ -48,11 +48,13 @@ class DimexTranscripts(DimexTranscript):
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
         return(df)
 
-class DimexSpeechFile(WavFile):
+
+class DimexWavFile(WavFile):
     def __init__(self, path:str):
         WavFile.__init__(self, path)
         self._language = 'spanish'
         self._dialect = 'mexican'
+        self._basename = get_basename(path)
 
     @property
     def language(self):
@@ -64,21 +66,18 @@ class DimexSpeechFile(WavFile):
 
     @property
     def uid(self):
-        # add suffix since files in comunes & individuales can have same id
-        uid = get_basename(self._path)
-        suffix = '_' + self._path.split('/')[-2][0]
-        return(uid + suffix)
+        return(self._basename)
 
     @property
     def sid(self):
-        return(get_basename(self._path)[:4])
+        return(self._basename[:4])
     
     @property
     def info(self):
         return
 
 
-class DimexSpeechFiles(DimexSpeechFile):
+""" class DimexSpeechFiles(DimexSpeechFile):
     def __init__(self, regex:str):
         self._file_list = glob.glob(regex)
     
@@ -87,5 +86,5 @@ class DimexSpeechFiles(DimexSpeechFile):
         d = lambda x: DimexSpeechFile(x)
         paths = [  (d(x).uid, d(x).sid, d(x).path, d(x).sr, d(x).duration, d(x).format, d(x).language, d(x).dialect) for x in self._file_list]    
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'sr', 'duration', 'format', 'language','dialect'])
-        return(df)
+        return(df) """
         
