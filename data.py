@@ -123,34 +123,35 @@ class WavFiles(object):
         return(df)
 
 
-class ASRDataset(ABC):
-    
-    def __init__(self, audio_path, tr_path):
+class ASRDataset(object):
+    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset'):
+        DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
+            {0}.dialect, {1}.path as transcript_path, {1}.transcript \
+            from {0} join {1} on {0}.uid={1}.uid and {0}.sid={1}.sid"
+        self._audio_cls = audio_cls
+        self._tr_cls = tr_cls
         self._audio_path = audio_path
         self._tr_path = tr_path
         self._wav = None
         self._tr = None
-        self._name = None
-        self._query = None
+        self._name = name
+        self._query = DEFAULT_QUERY
     
     @property
-    @abstractmethod
     def wav(self):
-        pass
+        return(WavFiles(self._audio_path, self._audio_cls).df)
 
     @property
-    @abstractmethod
     def tr(self):
-        pass
+        return(self._tr_cls(self._tr_path).df)
 
     @property
     def query(self):
         return(self._query)
     
     @query.setter
-    @abstractmethod
-    def query(self):
-        pass
+    def query(self, query):
+        self._query = query
 
     @property
     def df(self):
@@ -170,6 +171,19 @@ class ASRDataset(ABC):
     
     def pickle(self, path):
         self.df.to_pickle(path)
+
+
+class DataFactory(ABC):
+    @abstractmethod
+    def create_wavfile(self):
+        pass
+    
+    @abstractmethod
+    def create_transcripts(self):
+        pass
+
+
+
 
 if __name__ == "__main__":
     pass    
