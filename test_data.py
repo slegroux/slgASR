@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # to run tests:
-# pytest -p no:warnings -sv test_data.py
+# pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
 from data import get_basename, get_transcript, Transcript, WavFile, WavFiles
@@ -9,13 +9,15 @@ from data_dimex import DimexWavFile, DimexTranscript, DimexTranscripts
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from IPython import embed
 
+DATA_FOLDER='data/tests'
+
 @pytest.fixture(scope="module")
 def data_():
     data = {
-        'wavfile': 'test_data/dimex100/audio_16k/comunes/s05810.wav',
-        'regex_all_wavs': 'test_data/dimex100/audio_16k/*/*.wav',
-        'transcript': 'test_data/dimex100/texto/comunes/s10001.txt.utf8',
-        'regex_all_transcripts': 'test_data/dimex100/texto/*/*.txt.utf8'
+        'wavfile': DATA_FOLDER +'/dimex100/audio_16k/comunes/s05810.wav',
+        'regex_all_wavs': DATA_FOLDER +'/dimex100/audio_16k/*/*.wav',
+        'transcript': DATA_FOLDER +'/dimex100/texto/comunes/s10001.txt.utf8',
+        'regex_all_transcripts': DATA_FOLDER +'/dimex100/texto/*/*.txt.utf8'
         }
     return data
 
@@ -36,7 +38,7 @@ def test_dimex_file(data_):
 def test_dimex_files(data_):
     #dimex_speech_df = DimexSpeechFiles(data_['regex_all_wavs']).df
     dimex_speech_df = WavFiles(data_['regex_all_wavs'], DimexWavFile).df
-    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810', 's058', 'test_data/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
+    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810', 's058', DATA_FOLDER +'/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
     
 def test_transcript(data_):
     t = Transcript(data_['transcript']).transcript
@@ -48,16 +50,16 @@ def test_dimex_transcript(data_):
 
 def test_dimex_transcripts(data_):
     dimex_transcripts_df = DimexTranscripts(data_['regex_all_transcripts']).df
-    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001', 's100', 'test_data/dimex100/texto/comunes/s10001.txt.utf8', \
+    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001', 's100', DATA_FOLDER +'/dimex100/texto/comunes/s10001.txt.utf8', \
          'Todos los productos y publicaciones de "Adobe" son de naturaleza comercial .', 'spanish']
 
 
 @pytest.fixture(scope="module")
 def heroico_data():
     data = {
-        'wavfile': 'test_data/heroico/speech/Recordings_Spanish/1/1.wav',
-        'regex_wavs_recordings': 'test_data/heroico/speech/Recordings_Spanish/*/*.wav',
-        'transcript': 'test_data/heroico/transcripts/heroico-recordings.txt'
+        'wavfile': DATA_FOLDER +'/heroico/speech/Recordings_Spanish/1/1.wav',
+        'regex_wavs_recordings': DATA_FOLDER +'/heroico/speech/Recordings_Spanish/*/*.wav',
+        'transcript': DATA_FOLDER +'/heroico/transcripts/heroico-recordings.txt'
         }
     return data
 
@@ -72,7 +74,7 @@ def test_heroico_wav_file(heroico_data):
 def test_heroico_wav_files(heroico_data):
     heroico_df= WavFiles(heroico_data['regex_wavs_recordings'], HeroicoWavFile).df
     assert heroico_df.iloc[0].values.tolist() == ['1', '1', \
-        'test_data/heroico/speech/Recordings_Spanish/1/1.wav', 22050, \
+        DATA_FOLDER +'/heroico/speech/Recordings_Spanish/1/1.wav', 22050, \
         1.9127437641723355, 'wav', 'spanish','mexican']
 
 
