@@ -16,9 +16,10 @@ def get_basename(filename:str):
     else:
         return(get_basename(bn[0]))
 
-def get_transcript(filename:str):
+""" def get_transcript(filename:str):
     with open(filename, 'r', encoding='utf-8') as f:
         return(f.read().strip())
+ """
 
 
 class Transcript(object):
@@ -26,8 +27,9 @@ class Transcript(object):
         self._path = path
         self._language = language
         self._dialect = dialect
-
-    def _get_transcript(self, filename:str):
+    
+    @staticmethod
+    def get_transcript(filename:str):
         with open(filename, 'r', encoding='utf-8') as f:
             return(f.read().strip())
 
@@ -45,7 +47,7 @@ class Transcript(object):
 
     @property
     def transcript(self):
-        return(self._get_transcript(self.path))
+        return(self.get_transcript(self.path))
 
 
 class Transcripts(object):
@@ -93,13 +95,14 @@ class WavFile(object):
 
     @property
     def sr(self):
-        return( self._get_wav_info(self._path)[0])
+        return( self.get_wav_info(self._path)[0])
     
     @property
     def duration(self):
-        return( self._get_wav_info(self._path)[1])
+        return( self.get_wav_info(self._path)[1])
     
-    def _get_wav_info(self, filename:str):
+    @staticmethod
+    def get_wav_info(filename:str):
         with wave.open(filename, 'r') as f:
             n_frames = f.getnframes()
             frame_rate = f.getframerate()
@@ -133,10 +136,17 @@ class ASRDataset(object):
         self._audio_path = audio_path
         self._tr_path = tr_path
         self._wav = None
-        self._tr = None
+        self._tr = None 
+        self._df = None
         self._name = name
         self._query = DEFAULT_QUERY
-    
+
+    @classmethod
+    def init_with_csv(cls, csv_path, ids, name='dataset'):
+        cls._csv_path = csv_path
+        cls._ids = ids
+        return(cls(None, None, None, None, name))
+
     @property
     def wav(self):
         return(WavFiles(self._audio_path, self._audio_cls).df)
@@ -153,8 +163,7 @@ class ASRDataset(object):
     def query(self, query):
         self._query = query
 
-    @property
-    def df(self):
+    def _get_joined_df(self):
         wav_df = self.wav
         tr_df = self.tr
         q_ans = self.query.format("wav_df", "tr_df")        
@@ -162,11 +171,33 @@ class ASRDataset(object):
         self.add_uuid(joined)
         self.add_table_name(joined, self._name)
         return(joined)
+    
+    def _get_df_from_csv(self, ids, sep='\t', header=0, name='common_voice'):
+        
+        df = pd.read_csv(self._csv_path, sep=sep, header=header, names=ids)
+        self.add_uuid(df)
+        self.add_table_name(df, name)
+        df['transcript_path'] = [os.path.abspath(self._csv_path)] * len(df)        
+        df['duration'] = df['audio_path'].apply(lambda x: WavFile.get_wav_info(x)[1])
+        return(df)
 
-    def add_uuid(self, df):
+    @property
+    def df(self):
+        # check if variable is actually defined anywhere
+        
+        
+        
+        if hasattr(self, '_csv_path'):
+            return(self._get_df_from_csv(self._ids))
+        else:
+            return(self._get_joined_df())
+    
+    @staticmethod
+    def add_uuid(df):
         df['uuid'] = [ uuid.uuid4() for i in range(len(df))] 
 
-    def add_table_name(self, df, name):
+    @staticmethod
+    def add_table_name(df, name):
         df['dataset_id'] = [name] * len(df)
     
     def pickle(self, path):
@@ -181,8 +212,6 @@ class DataFactory(ABC):
     @abstractmethod
     def create_transcripts(self):
         pass
-
-
 
 
 if __name__ == "__main__":

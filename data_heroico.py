@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from data import WavFile, WavFiles, Transcript, get_basename, get_transcript
+from data import WavFile, WavFiles, Transcript, get_basename
 import pandas as pd
 from IPython import embed
 

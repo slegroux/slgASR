@@ -4,12 +4,15 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, get_transcript, Transcript, WavFile, WavFiles
+from data import get_basename, Transcript, WavFile, WavFiles, ASRDataset
 from data_dimex import DimexWavFile, DimexTranscript, DimexTranscripts
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
+from data_common_voice import CommonVoiceDF
+import numpy as np
 from IPython import embed
 
 DATA_FOLDER='data/tests'
+
 
 @pytest.fixture(scope="module")
 def data_():
@@ -77,10 +80,30 @@ def test_heroico_wav_files(heroico_data):
         DATA_FOLDER +'/heroico/speech/Recordings_Spanish/1/1.wav', 22050, \
         1.9127437641723355, 'wav', 'spanish','mexican']
 
+def test_heroico_join(heroico_data):
+    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, 'answers')
+    q = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
+            {0}.dialect, {1}.path as transcript_path, {1}.transcript \
+            from {0} join {1} on {0}.uid={1}.uid"
+    recordings.query = q
+    embed()
+
 
 @pytest.fixture(scope="module")
-
 def common_voice_data():
     data = {
-        'df': 'toto'
+        'path': 'data/tests/common_voice/test.tsv'
         }
+    return(data)
+
+def test_get_df_from_csv(common_voice_data):
+    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
+    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
+    ds.df
+
+def test_common_voice_df(common_voice_data):
+    cv = CommonVoiceDF(common_voice_data['path'])
+    assert cv.df.duration[0] == np.float64(3.168)
+    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
+    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
+

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from data import Transcript, WavFile, get_basename, get_transcript
+from data import Transcript, WavFile, get_basename
 import pandas as pd
 import glob, os
 
@@ -37,7 +37,7 @@ class DimexTranscripts(DimexTranscript):
         self._file_list = glob.glob(regex)
 
     def _process_transcripts(regex:str, language:str, suffix:str=''):
-        paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
+        paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), Transcript.get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
         return(df)
     
