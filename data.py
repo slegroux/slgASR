@@ -184,9 +184,6 @@ class ASRDataset(object):
     @property
     def df(self):
         # check if variable is actually defined anywhere
-        
-        
-        
         if hasattr(self, '_csv_path'):
             return(self._get_df_from_csv(self._ids))
         else:
@@ -203,16 +200,17 @@ class ASRDataset(object):
     def pickle(self, path):
         self.df.to_pickle(path)
 
-
-class DataFactory(ABC):
-    @abstractmethod
-    def create_wavfile(self):
-        pass
-    
-    @abstractmethod
-    def create_transcripts(self):
-        pass
-
+    def export2kaldi(self, dir_path):
+        try:
+            os.mkdir(dir_path)
+        except OSError as error:
+            print(error)
+        wav_scp = self.df[['uuid', 'audio_path']]
+        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', header=None)
+        utt2spk = self.df[['uuid','sid']]
+        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', header=None)
+        text = self.df[['uuid','transcript']]
+        text.to_csv(dir_path + '/text', sep=' ', header=None)
 
 if __name__ == "__main__":
     pass    
