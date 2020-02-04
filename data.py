@@ -147,7 +147,7 @@ class ASRDataset(object):
         if lang=='spanish':
             self._nlp = spacy.load("es_core_news_sm")
         elif lang=='english':
-            self._nlp = spacy.load("en_core_news_sm")
+            self._nlp = spacy.load("en_core_web_sm")
 
     @classmethod
     def init_with_csv(cls, csv_path, ids, name='dataset', lang='english'):

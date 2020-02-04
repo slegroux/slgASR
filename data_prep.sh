@@ -42,3 +42,12 @@ asr_data.export2kaldi('${kaldi_data_dir}/${dataset}')
 EOF
     sed -i 's/\"//g' ${kaldi_data_dir}/${dataset}/text
 done
+
+pushd $KALDI_SLG/egs/commonvoice_spanish/s5
+    . ./cmd.sh
+    . ./path.sh
+    for dataset in {train,set}; do
+        utils/utt2spk_to_spk2utt.pl data/${dataset}/utt2spk | sort >data/${dataset}/spk2utt
+        utils/fix_data_dir.sh data/${dataset}
+    done
+popd
