@@ -231,7 +231,11 @@ class ASRDataset(object):
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
-        text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
+        try:
+            text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
+        except IOError:
+            print("File already exists. Delete or change path")
+
 
 if __name__ == "__main__":
     pass    
