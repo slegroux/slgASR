@@ -8,6 +8,10 @@ from abc import ABC, abstractmethod
 import uuid
 from pandasql import sqldf
 from IPython import embed
+import csv
+import string
+import spacy
+
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -127,7 +131,7 @@ class WavFiles(object):
 
 
 class ASRDataset(object):
-    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset'):
+    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='english'):
         DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
             {0}.dialect, {1}.path as transcript_path, {1}.transcript \
             from {0} join {1} on {0}.uid={1}.uid and {0}.sid={1}.sid"
@@ -140,12 +144,16 @@ class ASRDataset(object):
         self._df = None
         self._name = name
         self._query = DEFAULT_QUERY
+        if lang=='spanish':
+            self._nlp = spacy.load("es_core_news_sm")
+        elif lang=='english':
+            self._nlp = spacy.load("en_core_news_sm")
 
     @classmethod
-    def init_with_csv(cls, csv_path, ids, name='dataset'):
+    def init_with_csv(cls, csv_path, ids, name='dataset', lang='english'):
         cls._csv_path = csv_path
         cls._ids = ids
-        return(cls(None, None, None, None, name))
+        return(cls(None, None, None, None, name, lang))
 
     @property
     def wav(self):
@@ -179,6 +187,7 @@ class ASRDataset(object):
         self.add_table_name(df, name)
         df['transcript_path'] = [os.path.abspath(self._csv_path)] * len(df)        
         df['duration'] = df['audio_path'].apply(lambda x: WavFile.get_wav_info(x)[1])
+        self._df = df
         return(df)
 
     @property
@@ -200,17 +209,29 @@ class ASRDataset(object):
     def pickle(self, path):
         self.df.to_pickle(path)
 
-    def export2kaldi(self, dir_path):
+    def remove_punc(self, sentence:str)-> str:
+        # words = sentence.split(' ')
+        # table = str.maketrans('', '', string.punctuation)
+        # stripped = [w.translate(table) for w in words]
+        # no_white = [s for s in stripped if s]
+
+        doc = self._nlp(sentence)
+        res = [(w.text, w.pos_) for w in doc]
+        return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+   
+
+    def export2kaldi(self, dir_path, lang='english'):
         try:
             os.mkdir(dir_path)
         except OSError as error:
             print(error)
         wav_scp = self.df[['uuid', 'audio_path']]
-        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', header=None)
+        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
         utt2spk = self.df[['uuid','sid']]
-        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', header=None)
-        text = self.df[['uuid','transcript']]
-        text.to_csv(dir_path + '/text', sep=' ', header=None)
+        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
+        self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
+        text = self._df[['uuid','transcript']]
+        text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
 
 if __name__ == "__main__":
     pass    
