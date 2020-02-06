@@ -141,18 +141,22 @@ class ASRDataset(object):
         self._tr_path = tr_path
         self._wav = None
         self._tr = None 
-        self._df = None
         self._name = name
         self._query = DEFAULT_QUERY
         if lang=='spanish':
             self._nlp = spacy.load("es_core_news_sm")
         elif lang=='english':
             self._nlp = spacy.load("en_core_web_sm")
+        
+        # check if variable is actually defined anywhere
+        if not (hasattr(self, '_csv_path')):
+            self._df = self._get_joined_df()
 
     @classmethod
     def init_with_csv(cls, csv_path, ids, name='dataset', lang='english'):
         cls._csv_path = csv_path
         cls._ids = ids
+        cls._df =cls._get_df_from_csv(cls, cls._ids)
         return(cls(None, None, None, None, name, lang))
 
     @property
@@ -192,11 +196,7 @@ class ASRDataset(object):
 
     @property
     def df(self):
-        # check if variable is actually defined anywhere
-        if hasattr(self, '_csv_path'):
-            return(self._get_df_from_csv(self._ids))
-        else:
-            return(self._get_joined_df())
+        return(self._df)
     
     @staticmethod
     def add_uuid(df):
@@ -225,12 +225,21 @@ class ASRDataset(object):
             os.mkdir(dir_path)
         except OSError as error:
             print(error)
+        
+        # kaldi needs uuid that starts by sid for sorting
+        # http://kaldi-asr.org/doc/data_prep.html
+        # convert uuid type to string to be able to add sid to it
+
+        self._df['uuid'] = self._df['uuid'].apply(lambda x: x.urn[9:])
+        self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
         wav_scp = self.df[['uuid', 'audio_path']]
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
         utt2spk = self.df[['uuid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
+
+
         try:
             text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
         except IOError:
