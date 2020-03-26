@@ -13,7 +13,7 @@ from IPython import embed
 
 DATA_FOLDER='data/tests'
 
-
+# fixture to init global variables
 @pytest.fixture(scope="module")
 def data_():
     data = {
@@ -24,6 +24,7 @@ def data_():
         }
     return data
 
+# test WavFile class
 def test_get_basename():
     bn = get_basename('/toto/test.txt.utf.totot')
     assert bn == 'test'

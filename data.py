@@ -65,7 +65,7 @@ class Transcripts(object):
 
 
 class WavFile(object):
-    def __init__(self, path:str, language='english', dialect='american', gender=None, suffix=''):
+    def __init__(self, path:str, language='en', dialect='US', gender=None, suffix=''):
         self._path = path
         self._format = 'wav'
         self._language = language
@@ -76,7 +76,11 @@ class WavFile(object):
     @property
     def language(self):
         return(self._language)
-    
+
+    @language.setter
+    def language(self, language):
+        self._language = language
+
     @property
     def dialect(self):
         return(self._dialect)
