@@ -11,6 +11,7 @@ from IPython import embed
 import csv
 import string
 import spacy
+import torchaudio
 
 
 def get_basename(filename:str):
@@ -20,21 +21,17 @@ def get_basename(filename:str):
     else:
         return(get_basename(bn[0]))
 
-""" def get_transcript(filename:str):
-    with open(filename, 'r', encoding='utf-8') as f:
-        return(f.read().strip())
- """
-
 
 class Transcript(object):
-    def __init__(self, path:str, language='english', dialect='american'):
+    def __init__(self, path:str, language='en', dialect='US', encoding='utf-8'):
         self._path = path
         self._language = language
         self._dialect = dialect
+        self._encoding = encoding
+        self._transcript = self.get_transcript(self.path)
     
-    @staticmethod
-    def get_transcript(filename:str):
-        with open(filename, 'r', encoding='utf-8') as f:
+    def get_transcript(self, filename:str):
+        with open(filename, 'r', encoding=self._encoding) as f:
             return(f.read().strip())
 
     @property
@@ -42,16 +39,32 @@ class Transcript(object):
         return(self._path)
     
     @property
+    def encoding(self):
+        return(self._encoding)
+    
+    @encoding.setter
+    def encoding(self, enc):
+        self._encoding = enc
+    
+    @property
     def language(self):
         return(self._language)
+    
+    @language.setter
+    def language(self, lang):
+        self._language = lang
     
     @property
     def dialect(self):
         return(self._dialect)
+    
+    @dialect.setter
+    def dialect(self, dialect):
+        self._dialect = dialect
 
     @property
     def transcript(self):
-        return(self.get_transcript(self.path))
+        return(self._transcript)
 
 
 class Transcripts(object):
@@ -72,6 +85,8 @@ class WavFile(object):
         self._dialect = dialect
         self._gender = None
         self._suffix = suffix
+        self._uuid = str(uuid.uuid4())
+        self._waveform, self._sample_rate = torchaudio.load(self._path)
 
     @property
     def language(self):
@@ -84,14 +99,22 @@ class WavFile(object):
     @property
     def dialect(self):
         return(self._dialect)
+
+    @dialect.setter
+    def dialect(self, dialect):
+        self._dialect = dialect
     
     @property
     def gender(self):
         return(self._gender)
     
+    @gender.setter
+    def gender(self, gender):
+        self._gender = gender
+    
     @property
-    def uid(self):
-        pass
+    def uuid(self):
+        return(self._uuid)
     
     @property
     def path(self):
@@ -103,11 +126,15 @@ class WavFile(object):
 
     @property
     def sr(self):
-        return( self.get_wav_info(self._path)[0])
+        return( self._sample_rate)
     
     @property
     def duration(self):
         return( self.get_wav_info(self._path)[1])
+
+    @property
+    def waveform(self):
+        return(self._waveform)
     
     @staticmethod
     def get_wav_info(filename:str):
