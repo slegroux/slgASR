@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# (c) 2020 slegroux@ccrma.stanford.edu
 
 import pandas as pd
 import numpy as np
@@ -29,7 +30,7 @@ class Transcript(object):
         self._dialect = dialect
         self._encoding = encoding
         self._transcript = self.get_transcript(self.path)
-    
+        
     def get_transcript(self, filename:str):
         with open(filename, 'r', encoding=self._encoding) as f:
             return(f.read().strip())
@@ -128,6 +129,11 @@ class WavFile(object):
     def sr(self):
         return( self._sample_rate)
     
+    # in case changed by a transform such as Resample
+    @sr.setter
+    def sr(self, sr):
+        self._sample_rate = sr
+    
     @property
     def duration(self):
         return( self.get_wav_info(self._path)[1])
@@ -135,6 +141,11 @@ class WavFile(object):
     @property
     def waveform(self):
         return(self._waveform)
+    
+    # for transforms (like resample and such)
+    @waveform.setter
+    def waveform(self, waveform):
+        self._waveform = waveform
     
     @staticmethod
     def get_wav_info(filename:str):
