@@ -1,90 +1,69 @@
 #!/usr/bin/env python
+# (c) 2020 slegroux@ccrma.stanford.edu
+
 from data import Transcript, WavFile, get_basename
 import pandas as pd
 import glob, os
+from torch.utils.data import Dataset
+from pathlib import Path
+from pandasql import sqldf
+from IPython import embed
+from torchaudio import transform
 
 
-class DimexTranscript(Transcript):
-    def __init__(self, path:str):
-        Transcript.__init__(self, path)
-        self._language = 'spanish'
-        self._dialect = 'mexican'
-        self._basename = get_basename(path)
+class DIMEX(Dataset):
+    def __init__(self, root_path:str, transform=None):
+        self._transform = transform
+        audio_paths = Path(root_path).rglob('*/audio_editado/*/*.wav')
+        self._audio_df = pd.DataFrame(list(audio_paths), columns=['path'])
 
-    @property
-    def language(self):
-        return(self._language)
-    
-    @property
-    def dialect(self):
-        return(self._dialect)
-
-    @property
-    def uid(self):
-        return(self._basename)
-
-    @property
-    def sid(self):
-        return(self._basename[:4])
-    
-    @property
-    def info(self):
-        return    
-
-
-class DimexTranscripts(DimexTranscript):
-    def __init__(self, regex:str):
-        self._file_list = glob.glob(regex)
-
-    def _process_transcripts(regex:str, language:str, suffix:str=''):
-        paths = [ (get_basename(x) + suffix, get_basename(x)[:4], os.path.abspath(x), Transcript.get_transcript(os.path.abspath(x)), language) for x in glob.glob(regex)]
-        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
-        return(df)
-    
-    @property
-    def df(self):
-        d = lambda x: DimexTranscript(x)
-        paths = [  (d(x).uid, d(x).sid, d(x).path, d(x).transcript, d(x).language) for x in self._file_list]    
-        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'transcript', 'language'])
-        return(df)
-
-
-class DimexWavFile(WavFile):
-    def __init__(self, path:str):
-        WavFile.__init__(self, path)
-        self._language = 'spanish'
-        self._dialect = 'mexican'
-        self._basename = get_basename(path)
-
-    @property
-    def language(self):
-        return(self._language)
-    
-    @property
-    def dialect(self):
-        return(self._dialect)
-
-    @property
-    def uid(self):
-        return(self._basename)
-
-    @property
-    def sid(self):
-        return(self._basename[:4])
-    
-    @property
-    def info(self):
-        return
-
-
-""" class DimexSpeechFiles(DimexSpeechFile):
-    def __init__(self, regex:str):
-        self._file_list = glob.glob(regex)
-    
-    @property
-    def df(self):
-        d = lambda x: DimexSpeechFile(x)
-        paths = [  (d(x).uid, d(x).sid, d(x).path, d(x).sr, d(x).duration, d(x).format, d(x).language, d(x).dialect) for x in self._file_list]    
-        df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', 'sr', 'duration', 'format', 'language','dialect'])
-        return(df) """
+        transcripts = Path(root_path).rglob('*/texto/*/*.utf8')
+        self._transcript_df = pd.DataFrame(list(transcripts), columns=['path'])
         
+        lambdas = {
+           'shared': lambda x: x.parts[-2],
+           'id': lambda x: x.stem,
+           'sid': lambda x: x.parts[-4]
+        }
+
+        for i in ('shared', 'id', 'sid'):
+            self._audio_df[i] = self._audio_df.path.apply(lambdas[i])
+            self._transcript_df[i] = self._transcript_df.path.apply(lambdas[i])
+
+        # Path type not recognized by pandasql => convert to string
+        audio_df = self._audio_df
+        audio_df.path = audio_df.path.astype(str)
+        transcript_df = self._transcript_df
+        transcript_df.path = transcript_df.path.astype(str)
+
+        # join tables by id & shared 
+        q = "select a.sid, a.id, a.shared, a.path as audio_path, t.path as transcript_path \
+            from audio_df a join transcript_df t on a.id = t.id and a.shared = t.shared;"
+
+        self._ds = sqldf(q, locals())
+
+
+    def __getitem__(self, n):
+        audio_path = str(self._ds.iloc[n].audio_path)
+        trn_path = str(self._ds.iloc[n].transcript_path)
+        sid = self._ds.iloc[n].sid
+        shared = self._ds.iloc[n].shared
+        id = self._ds.iloc[n].id
+        uid = sid + '_' + id
+        if self.transform:
+            transformed = 
+        w = WavFile(audio_path, language='es', dialect='MX')
+        t = Transcript(trn_path, language='es', dialect='MX', encoding='utf-8')
+        return(uid, w.waveform, w.sr, w.duration, t.transcript)
+
+    def __len__(self):
+        return(len(self._audios))
+    
+    @property
+    def audio_df(self):
+        return(self._audio_df)
+    
+    @property
+    def transcript_df(self):
+        return(self._transcript_df)
+
