@@ -8,12 +8,12 @@ from torch.utils.data import Dataset
 from pathlib import Path
 from pandasql import sqldf
 from IPython import embed
-from torchaudio import transform
+import torchaudio
 
 
 class DIMEX(Dataset):
-    def __init__(self, root_path:str, transform=None):
-        self._transform = transform
+    def __init__(self, root_path:str, resample=None):
+        self._resample = resample
         audio_paths = Path(root_path).rglob('*/audio_editado/*/*.wav')
         self._audio_df = pd.DataFrame(list(audio_paths), columns=['path'])
 
@@ -50,9 +50,12 @@ class DIMEX(Dataset):
         shared = self._ds.iloc[n].shared
         id = self._ds.iloc[n].id
         uid = sid + '_' + id
-        if self.transform:
-            transformed = 
+
         w = WavFile(audio_path, language='es', dialect='MX')
+        if self._resample:
+            w.waveform = torchaudio.transforms.Resample(w.sr, self._resample)(w.waveform)
+            w.sr = self._resample
+
         t = Transcript(trn_path, language='es', dialect='MX', encoding='utf-8')
         return(uid, w.waveform, w.sr, w.duration, t.transcript)
 
