@@ -10,7 +10,7 @@ import torchaudio
 
 
 class DIMEX(SpeechDataset):
-    def __init__(self, root_path:str, resample=None, normalize=False):
+    def __init__(self, root_path:str, resample:int=None, normalize:bool=False):
         self._language = 'es'
         self._dialect = 'MX'
         self._resample = resample
@@ -67,7 +67,7 @@ class DIMEX(SpeechDataset):
         return(len(self._df))
     
     def export2kaldi(self, path):
-        super().export2kaldi(path, language='es', dialect='MX', normalizer=self._normalizer)
+        super().export2kaldi(path, language='es', dialect='MX', normalizer=self._normalizer, resample=self._resample)
 
     @property
     def df(self):

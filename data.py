@@ -187,7 +187,8 @@ class SpeechDataset(Dataset):
     def __len__(self):
         pass
 
-    def export2kaldi(self, dir_path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
+    def export2kaldi(self, dir_path:str, language:str='en', \
+        dialect:str='US', encoding:str='utf-8', normalizer=None, resample:int=None):
         try:
             os.mkdir(dir_path)
         except OSError as error:
@@ -198,8 +199,15 @@ class SpeechDataset(Dataset):
         # convert uuid type to string to be able to add sid to it
         # TODO online resampling + take care of text normalization
 
-        wav_scp = self._ds[['uid', 'audio_path']]
+        if resample:
+            sox_resample = lambda x: "sox " + x + " -t wav -r " + str(resample) + " -c 1 - |"
+            wav_scp = self._ds[['uid', 'audio_path']]
+            soxed = wav_scp['audio_path'].apply(sox_resample)
+            wav_scp = soxed
+        else:
+            wav_scp = self._ds[['uid', 'audio_path']] 
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
+        
         utt2spk = self._ds[['uid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
 
