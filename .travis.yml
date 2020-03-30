@@ -9,3 +9,7 @@ install:
 # command to run tests
 script:
   - pytest -p no:warnings -sv test_data.py::test_wav_file
+  - pytest -p no:warnings -sv test_data.py::test_text_normalizer
+  - pytest -p no:warnings -sv test_data.py::test_transcript
+  - pytest -p no:warnings -sv test_data.py::test_dimex
+
