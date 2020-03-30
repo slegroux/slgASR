@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-
 # to run tests:
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile
+from data import get_basename, Transcript, WavFile, TextNormalizer
 from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
@@ -37,20 +36,31 @@ def test_wav_file(data_):
         (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
     #TODO add test for waveform 
 
+def test_text_normalizer(data_):
+    normalizer = TextNormalizer()
+    assert normalizer.normalize('Hey!') == 'hey'
+    normalizer = TextNormalizer(language='es')
+    assert normalizer.normalize('Hola!') == 'hola'
+
 def test_transcript(data_):
-    t = Transcript(data_['transcript'])
+    normalizer = TextNormalizer('es')
+    t = Transcript(data_['transcript'], normalizer=normalizer)
     t.encoding = 'utf-8'
-    t.language = 'fr'
-    t.dialect = 'BE'
+    t.language = 'es'
+    t.dialect = 'MX'
     trans = t.transcript
-    assert (trans == u"Recopilación de firmas en contra de la extrema derecha de Austria.")
+    assert (trans == u"recopilación de firmas en contra de la extrema derecha de austria")
     assert t.path == data_['transcript']
-    assert (t.encoding, t.language, t.dialect) == ('utf-8', 'fr', 'BE')
+    assert (t.encoding, t.language, t.dialect) == ('utf-8', 'es', 'MX')
 
 def test_dimex(data_):
-    dimex = DIMEX(data_['root'], resample=8000)
+    dimex = DIMEX(data_['root'], resample=8000, normalize=True)
     assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
-        ('s058_s05810',8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
+        ('s058_s05810_comunes',8000, 3.5403125,'recopilación de firmas en contra de la extrema derecha de austria')
+    dimex = DIMEX(data_['root'], resample=8000, normalize=False)
+    assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
+        ('s058_s05810_comunes',8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
+    dimex.export2kaldi('/tmp/test2')
 
 
 @pytest.fixture(scope="module")

@@ -13,7 +13,7 @@ import csv
 import string
 import spacy
 import torchaudio
-
+from torch.utils.data import Dataset
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -22,16 +22,41 @@ def get_basename(filename:str):
     else:
         return(get_basename(bn[0]))
 
+class TextNormalizer(object):
+    def __init__(self, language:str='en'):
+        #TODO check for other languages & add other normalization rules
+        if language=='es':
+            self._nlp = spacy.load("es_core_news_sm")
+        elif language=='en':
+            self._nlp = spacy.load("en_core_web_sm")
+        self._text = None
+        
+    def normalize(self, text:str)->str:
+        self._text = self.remove_punc(text)
+        return(self._text)
+
+    def remove_punc(self, sentence:str)-> str:
+        doc = self._nlp(sentence)
+        res = [(w.text, w.pos_) for w in doc]
+        return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+    
+    @property
+    def text(self):
+        return(self._text)
 
 class Transcript(object):
-    def __init__(self, path:str, language='en', dialect='US', encoding='utf-8'):
+    def __init__(self, path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
         self._path = path
         self._language = language
         self._dialect = dialect
         self._encoding = encoding
-        self._transcript = self.get_transcript(self.path)
+        if normalizer:
+            text = self.get_transcript(self.path)
+            self._transcript = normalizer.normalize(text)
+        else:
+            self._transcript = self.get_transcript(self.path)
         
-    def get_transcript(self, filename:str):
+    def get_transcript(self, filename:str)->str:
         with open(filename, 'r', encoding=self._encoding) as f:
             return(f.read().strip())
 
@@ -66,16 +91,11 @@ class Transcript(object):
     @property
     def transcript(self):
         return(self._transcript)
-
-
-class Transcripts(object):
-    def __init__(self, regex:str, tr_cls=None):
-        self._file_list = glob.glob(regex)
-        self._tr_cls = tr_cls
     
-    @property
-    def df(self):
-        pass
+    # for e.g. normalization of transcript
+    @transcript.setter
+    def transcript(self, trn):
+        sef._transcript = trn
 
 
 class WavFile(object):
@@ -88,6 +108,7 @@ class WavFile(object):
         self._suffix = suffix
         self._uuid = str(uuid.uuid4())
         self._waveform, self._sample_rate = torchaudio.load(self._path)
+    
 
     @property
     def language(self):
@@ -148,12 +169,57 @@ class WavFile(object):
         self._waveform = waveform
     
     @staticmethod
-    def get_wav_info(filename:str):
+    def get_wav_info(filename:str)->(int, float):
         with wave.open(filename, 'r') as f:
             n_frames = f.getnframes()
             frame_rate = f.getframerate()
             duration  = n_frames / float(frame_rate)
         return(frame_rate, duration)
+
+
+class SpeechDataset(Dataset):
+    def __init__(self):
+        pass
+    
+    def __getitem__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def export2kaldi(self, dir_path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
+        try:
+            os.mkdir(dir_path)
+        except OSError as error:
+            print(error)
+        # #embed()
+        # kaldi needs uuid that starts by sid for sorting
+        # http://kaldi-asr.org/doc/data_prep.html
+        # convert uuid type to string to be able to add sid to it
+        # TODO online resampling + take care of text normalization
+
+        wav_scp = self._ds[['uid', 'audio_path']]
+        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
+        utt2spk = self._ds[['uid','sid']]
+        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
+
+        self._ds['transcript'] = self._ds['transcript_path'].apply(lambda x: Transcript(x, language=language, dialect=dialect, encoding=encoding, normalizer=normalizer).transcript)
+        text = self._ds[['uid','transcript']]
+
+        try:
+            text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
+        except IOError:
+            print("File already exists. Delete or change path")
+
+
+class Transcripts(object):
+    def __init__(self, regex:str, tr_cls=None):
+        self._file_list = glob.glob(regex)
+        self._tr_cls = tr_cls
+    
+    @property
+    def df(self):
+        pass
 
 
 class WavFiles(object):
@@ -171,7 +237,7 @@ class WavFiles(object):
             'sr', 'duration', 'format', 'language','dialect'])
         return(df)
 
-
+    
 class ASRDataset(object):
     def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='english'):
         DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
