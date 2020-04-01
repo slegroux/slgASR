@@ -202,8 +202,11 @@ class SpeechDataset(Dataset):
         if resample:
             sox_resample = lambda x: "sox " + x + " -t wav -r " + str(resample) + " -c 1 - |"
             wav_scp = self._ds[['uid', 'audio_path']]
-            soxed = wav_scp['audio_path'].apply(sox_resample)
-            wav_scp = soxed
+            soxed = wav_scp['audio_path'].apply(sox_resample).copy()
+            # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+            wav_scp = wav_scp.copy()
+            wav_scp['audio_path'] = soxed
+
         else:
             wav_scp = self._ds[['uid', 'audio_path']] 
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)

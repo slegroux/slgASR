@@ -44,23 +44,20 @@ class DIMEX(SpeechDataset):
         # join tables by id & shared 
         q = "select a.sid, a.id, a.shared, a.path as audio_path, t.path as transcript_path \
             from audio_df a join transcript_df t on a.id = t.id and a.shared = t.shared;"
-
         ds = sqldf(q, locals())
         ds['uid'] = ds['sid'] + '_' + ds['id'] + '_' + ds['shared']
         self._ds = ds
+        embed()
 
     def __getitem__(self, n):
         audio_path = str(self._ds.iloc[n].audio_path)
         trn_path = str(self._ds.iloc[n].transcript_path)
         uid = str(self._ds.iloc[n].uid)
-
         w = WavFile(audio_path, language='es', dialect='MX')
         if self._resample:
             w.waveform = torchaudio.transforms.Resample(w.sr, self._resample)(w.waveform)
             w.sr = self._resample
-
         t = Transcript(trn_path, language='es', dialect='MX', encoding='utf-8', normalizer=self._normalizer)
-        
         return(uid, w.waveform, w.sr, w.duration, t.transcript)
 
     def __len__(self):
