@@ -109,6 +109,5 @@ def test_common_voice_df(common_voice_data):
 def test_to_kaldi(common_voice_data):
     ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
     ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
-
     ds.export2kaldi('/tmp/kaldi_dir')
     
