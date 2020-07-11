@@ -81,12 +81,12 @@ def test_heroico_wav_files(heroico_data):
         1.9127437641723355, 'wav', 'spanish','mexican']
 
 def test_heroico_join(heroico_data):
-    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, 'recordings')
+    
     q = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
             {0}.dialect, {1}.path as transcript_path, {1}.transcript \
             from {0} join {1} on {0}.uid={1}.uid"
-    
-    recordings.query = q
+
+    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, query=q)
     assert recordings.df.transcript[0]  == 'iturbide se auto nombró generalísimo de mar y tierra'
 
 
