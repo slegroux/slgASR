@@ -11,6 +11,7 @@ from IPython import embed
 import csv
 import string
 import spacy
+import sys
 
 
 def get_basename(filename:str):
@@ -107,11 +108,15 @@ class WavFile(object):
     
     @staticmethod
     def get_wav_info(filename:str):
-        with wave.open(filename, 'r') as f:
-            n_frames = f.getnframes()
-            frame_rate = f.getframerate()
-            duration  = n_frames / float(frame_rate)
-        return(frame_rate, duration)
+        try:
+            with wave.open(filename, 'r') as f:
+                n_frames = f.getnframes()
+                frame_rate = f.getframerate()
+                duration  = n_frames / float(frame_rate)
+            return(frame_rate, duration)
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            return(None,None)
 
 
 class WavFiles(object):
@@ -130,11 +135,13 @@ class WavFiles(object):
         return(df)
 
 
-class ASRDataset(object):
-    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='english'):
-        DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
+DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
             {0}.dialect, {1}.path as transcript_path, {1}.transcript \
             from {0} join {1} on {0}.uid={1}.uid and {0}.sid={1}.sid"
+
+class ASRDataset(object):
+    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='english', query=DEFAULT_QUERY):
+
         self._audio_cls = audio_cls
         self._tr_cls = tr_cls
         self._audio_path = audio_path
@@ -142,7 +149,7 @@ class ASRDataset(object):
         self._wav = None
         self._tr = None 
         self._name = name
-        self._query = DEFAULT_QUERY
+        self._query = query
         if lang=='spanish':
             self._nlp = spacy.load("es_core_news_sm")
         elif lang=='english':
@@ -151,6 +158,7 @@ class ASRDataset(object):
         # check if variable is actually defined anywhere
         if not (hasattr(self, '_csv_path')):
             self._df = self._get_joined_df()
+
 
     @classmethod
     def init_with_csv(cls, csv_path, ids, name='dataset', lang='english'):
@@ -178,7 +186,8 @@ class ASRDataset(object):
     def _get_joined_df(self):
         wav_df = self.wav
         tr_df = self.tr
-        q_ans = self.query.format("wav_df", "tr_df")        
+
+        q_ans = self.query.format("wav_df", "tr_df")
         joined = sqldf(q_ans, locals())
         self.add_uuid(joined)
         self.add_table_name(joined, self._name)
@@ -238,7 +247,6 @@ class ASRDataset(object):
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
-
 
         try:
             text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
