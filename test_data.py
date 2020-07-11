@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-
 # to run tests:
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile, WavFiles, ASRDataset
-from data_dimex import DimexWavFile, DimexTranscript, DimexTranscripts
+from data import get_basename, Transcript, WavFile, TextNormalizer
+from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
 import numpy as np
@@ -13,48 +12,55 @@ from IPython import embed
 
 DATA_FOLDER='data/tests'
 
-
+# fixture to init global variables
 @pytest.fixture(scope="module")
 def data_():
     data = {
-        'wavfile': DATA_FOLDER +'/dimex100/audio_16k/comunes/s05810.wav',
-        'regex_all_wavs': DATA_FOLDER +'/dimex100/audio_16k/*/*.wav',
-        'transcript': DATA_FOLDER +'/dimex100/texto/comunes/s10001.txt.utf8',
-        'regex_all_transcripts': DATA_FOLDER +'/dimex100/texto/*/*.txt.utf8'
+        'root': DATA_FOLDER +'/dimex100',
+        'wavfile': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/s05810.wav',
+        'transcript': DATA_FOLDER + '/dimex100/s058/texto/comunes/s05810.utf8'
         }
     return data
 
+# test WavFile class
 def test_get_basename():
     bn = get_basename('/toto/test.txt.utf.totot')
     assert bn == 'test'
 
 def test_wav_file(data_):    
     w = WavFile(data_['wavfile'])
-    assert (w.path, w.sr, w.duration) == (data_['wavfile'], 16000, 3.5403125)
+    w.language = 'fr'
+    w.dialect = 'CA'
+    w.gender = 'M'
+    assert (w.path, w.sr, w.duration, w.language, w.dialect, w.gender) == \
+        (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
+    #TODO add test for waveform 
 
-def test_dimex_file(data_):
-    d = DimexWavFile(data_['wavfile'])
-    assert (d.uid, d.sid, d.path, d.sr, d.duration, d.format, d.language, d.dialect) == \
-        ('s05810', 's058', data_['wavfile'],
-         16000, 3.5403125, 'wav', 'spanish', 'mexican')
+def test_text_normalizer(data_):
+    normalizer = TextNormalizer()
+    assert normalizer.normalize('Hey!') == 'hey'
+    normalizer = TextNormalizer(language='es')
+    assert normalizer.normalize('Hola!') == 'hola'
 
-def test_dimex_files(data_):
-    #dimex_speech_df = DimexSpeechFiles(data_['regex_all_wavs']).df
-    dimex_speech_df = WavFiles(data_['regex_all_wavs'], DimexWavFile).df
-    assert dimex_speech_df.iloc[0].values.tolist() == ['s05810', 's058', DATA_FOLDER +'/dimex100/audio_16k/comunes/s05810.wav', 16000, 3.5403125, 'wav', 'spanish', 'mexican']
-    
 def test_transcript(data_):
-    t = Transcript(data_['transcript']).transcript
-    assert (t == u"Todos los productos y publicaciones de \"Adobe\" son de naturaleza comercial .")
+    normalizer = TextNormalizer('es')
+    t = Transcript(data_['transcript'], normalizer=normalizer)
+    t.encoding = 'utf-8'
+    t.language = 'es'
+    t.dialect = 'MX'
+    trans = t.transcript
+    assert (trans == u"recopilación de firmas en contra de la extrema derecha de austria")
+    assert t.path == data_['transcript']
+    assert (t.encoding, t.language, t.dialect) == ('utf-8', 'es', 'MX')
 
-def test_dimex_transcript(data_):
-    t = DimexTranscript(data_['transcript']).transcript
-    assert (t == u"Todos los productos y publicaciones de \"Adobe\" son de naturaleza comercial .")
-
-def test_dimex_transcripts(data_):
-    dimex_transcripts_df = DimexTranscripts(data_['regex_all_transcripts']).df
-    assert dimex_transcripts_df.iloc[0].values.tolist()  == ['s10001', 's100', DATA_FOLDER +'/dimex100/texto/comunes/s10001.txt.utf8', \
-         'Todos los productos y publicaciones de "Adobe" son de naturaleza comercial .', 'spanish']
+def test_dimex(data_):
+    dimex = DIMEX(data_['root'], resample=8000, normalize=True)
+    assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
+        ('s058_s05810_comunes',8000, 3.5403125,'recopilación de firmas en contra de la extrema derecha de austria')
+    dimex = DIMEX(data_['root'], resample=8000, normalize=False)
+    assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
+        ('s058_s05810_comunes',8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
+    dimex.export2kaldi('/tmp/test2')
 
 
 @pytest.fixture(scope="module")

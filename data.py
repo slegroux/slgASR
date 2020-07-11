@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# (c) 2020 slegroux@ccrma.stanford.edu
 
 import pandas as pd
 import numpy as np
@@ -13,7 +14,6 @@ import string
 import spacy
 import sys
 
-
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
     if bn[1] == '':
@@ -21,21 +21,42 @@ def get_basename(filename:str):
     else:
         return(get_basename(bn[0]))
 
-""" def get_transcript(filename:str):
-    with open(filename, 'r', encoding='utf-8') as f:
-        return(f.read().strip())
- """
+class TextNormalizer(object):
+    def __init__(self, language:str='en'):
+        #TODO check for other languages & add other normalization rules
+        if language=='es':
+            self._nlp = spacy.load("es_core_news_sm")
+        elif language=='en':
+            self._nlp = spacy.load("en_core_web_sm")
+        self._text = None
+        
+    def normalize(self, text:str)->str:
+        self._text = self.remove_punc(text)
+        return(self._text)
 
+    def remove_punc(self, sentence:str)-> str:
+        doc = self._nlp(sentence)
+        res = [(w.text, w.pos_) for w in doc]
+        return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+    
+    @property
+    def text(self):
+        return(self._text)
 
 class Transcript(object):
-    def __init__(self, path:str, language='english', dialect='american'):
+    def __init__(self, path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
         self._path = path
         self._language = language
         self._dialect = dialect
-    
-    @staticmethod
-    def get_transcript(filename:str):
-        with open(filename, 'r', encoding='utf-8') as f:
+        self._encoding = encoding
+        if normalizer:
+            text = self.get_transcript(self.path)
+            self._transcript = normalizer.normalize(text)
+        else:
+            self._transcript = self.get_transcript(self.path)
+        
+    def get_transcript(self, filename:str)->str:
+        with open(filename, 'r', encoding=self._encoding) as f:
             return(f.read().strip())
 
     @property
@@ -43,52 +64,78 @@ class Transcript(object):
         return(self._path)
     
     @property
+    def encoding(self):
+        return(self._encoding)
+    
+    @encoding.setter
+    def encoding(self, enc):
+        self._encoding = enc
+    
+    @property
     def language(self):
         return(self._language)
+    
+    @language.setter
+    def language(self, lang):
+        self._language = lang
     
     @property
     def dialect(self):
         return(self._dialect)
+    
+    @dialect.setter
+    def dialect(self, dialect):
+        self._dialect = dialect
 
     @property
     def transcript(self):
-        return(self.get_transcript(self.path))
-
-
-class Transcripts(object):
-    def __init__(self, regex:str, tr_cls=None):
-        self._file_list = glob.glob(regex)
-        self._tr_cls = tr_cls
+        return(self._transcript)
     
-    @property
-    def df(self):
-        pass
+    # for e.g. normalization of transcript
+    @transcript.setter
+    def transcript(self, trn):
+        sef._transcript = trn
 
 
 class WavFile(object):
-    def __init__(self, path:str, language='english', dialect='american', gender=None, suffix=''):
+    def __init__(self, path:str, language='en', dialect='US', gender=None, suffix=''):
         self._path = path
         self._format = 'wav'
         self._language = language
         self._dialect = dialect
         self._gender = None
         self._suffix = suffix
+        self._uuid = str(uuid.uuid4())
+        self._waveform, self._sample_rate = torchaudio.load(self._path)
+    
 
     @property
     def language(self):
         return(self._language)
-    
+
+    @language.setter
+    def language(self, language):
+        self._language = language
+
     @property
     def dialect(self):
         return(self._dialect)
+
+    @dialect.setter
+    def dialect(self, dialect):
+        self._dialect = dialect
     
     @property
     def gender(self):
         return(self._gender)
     
+    @gender.setter
+    def gender(self, gender):
+        self._gender = gender
+    
     @property
-    def uid(self):
-        pass
+    def uuid(self):
+        return(self._uuid)
     
     @property
     def path(self):
@@ -100,11 +147,25 @@ class WavFile(object):
 
     @property
     def sr(self):
-        return( self.get_wav_info(self._path)[0])
+        return( self._sample_rate)
+    
+    # in case changed by a transform such as Resample
+    @sr.setter
+    def sr(self, sr):
+        self._sample_rate = sr
     
     @property
     def duration(self):
         return( self.get_wav_info(self._path)[1])
+
+    @property
+    def waveform(self):
+        return(self._waveform)
+    
+    # for transforms (like resample and such)
+    @waveform.setter
+    def waveform(self, waveform):
+        self._waveform = waveform
     
     @staticmethod
     def get_wav_info(filename:str):
@@ -117,6 +178,62 @@ class WavFile(object):
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             return(None,None)
+
+
+class SpeechDataset(Dataset):
+    def __init__(self):
+        pass
+    
+    def __getitem__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def export2kaldi(self, dir_path:str, language:str='en', \
+        dialect:str='US', encoding:str='utf-8', normalizer=None, resample:int=None):
+        try:
+            os.mkdir(dir_path)
+        except OSError as error:
+            print(error)
+        # #embed()
+        # kaldi needs uuid that starts by sid for sorting
+        # http://kaldi-asr.org/doc/data_prep.html
+        # convert uuid type to string to be able to add sid to it
+        # TODO online resampling + take care of text normalization
+
+        if resample:
+            sox_resample = lambda x: "sox " + x + " -t wav -r " + str(resample) + " -c 1 - |"
+            wav_scp = self._ds[['uid', 'audio_path']]
+            soxed = wav_scp['audio_path'].apply(sox_resample).copy()
+            # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+            wav_scp = wav_scp.copy()
+            wav_scp['audio_path'] = soxed
+
+        else:
+            wav_scp = self._ds[['uid', 'audio_path']] 
+        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
+        
+        utt2spk = self._ds[['uid','sid']]
+        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
+
+        self._ds['transcript'] = self._ds['transcript_path'].apply(lambda x: Transcript(x, language=language, dialect=dialect, encoding=encoding, normalizer=normalizer).transcript)
+        text = self._ds[['uid','transcript']]
+
+        try:
+            text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
+        except IOError:
+            print("File already exists. Delete or change path")
+
+
+class Transcripts(object):
+    def __init__(self, regex:str, tr_cls=None):
+        self._file_list = glob.glob(regex)
+        self._tr_cls = tr_cls
+    
+    @property
+    def df(self):
+        pass
 
 
 class WavFiles(object):
@@ -133,7 +250,6 @@ class WavFiles(object):
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', \
             'sr', 'duration', 'format', 'language','dialect'])
         return(df)
-
 
 DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
             {0}.dialect, {1}.path as transcript_path, {1}.transcript \
