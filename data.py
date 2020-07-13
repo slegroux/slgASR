@@ -13,7 +13,7 @@ import csv
 import string
 import spacy
 import torchaudio
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -21,6 +21,7 @@ def get_basename(filename:str):
         return(bn[0])
     else:
         return(get_basename(bn[0]))
+
 
 class TextNormalizer(object):
     def __init__(self, language:str='en'):
@@ -43,6 +44,7 @@ class TextNormalizer(object):
     @property
     def text(self):
         return(self._text)
+
 
 class Transcript(object):
     def __init__(self, path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
@@ -109,7 +111,6 @@ class WavFile(object):
         self._uuid = str(uuid.uuid4())
         self._waveform, self._sample_rate = torchaudio.load(self._path)
     
-
     @property
     def language(self):
         return(self._language)
@@ -179,6 +180,16 @@ class WavFile(object):
 
 class SpeechDataset(Dataset):
     def __init__(self):
+        self._ds = None
+        self._train = None
+        self._test = None
+    
+    @classmethod
+    def init_from_df(cls, df):
+        pass
+
+    @classmethod
+    def init_from_csv(self, path:str):
         pass
     
     def __getitem__(self):
@@ -221,6 +232,26 @@ class SpeechDataset(Dataset):
             text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
         except IOError:
             print("File already exists. Delete or change path")
+
+
+class DatasetSplit(object):
+    def __init__(self, dataset, split:float=0.8, shuffle=False):
+        self._split = split
+        self._shuffle = shuffle
+        self._ds = dataset._ds
+        self._train = None
+        self._test = None
+
+    def split(self):
+        data_len = len(self._ds)
+        train_len = int(self._split * data_len)
+        test_len = data_len - train_len
+
+        if self._shuffle:
+            self._ds = self._ds.sample(len(self._ds))
+        self._train = self._ds[:train_len]
+        self._test = self._ds[train_len:]
+        return(self._train, self._test)
 
 
 class Transcripts(object):
@@ -357,7 +388,6 @@ class ASRDataset(object):
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
-
 
         try:
             text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
