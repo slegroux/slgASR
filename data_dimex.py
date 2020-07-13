@@ -16,6 +16,7 @@ class DIMEX(SpeechDataset):
         self._resample = resample
         self._normalize = normalize
         self._normalizer = None
+        self._ds = None
         if self._normalize:
             self._normalizer = TextNormalizer(language=self._language)
         
