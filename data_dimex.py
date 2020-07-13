@@ -47,7 +47,7 @@ class DIMEX(SpeechDataset):
         ds = sqldf(q, locals())
         ds['uid'] = ds['sid'] + '_' + ds['id'] + '_' + ds['shared']
         self._ds = ds
-        embed()
+
 
     def __getitem__(self, n):
         audio_path = str(self._ds.iloc[n].audio_path)
