@@ -3,7 +3,7 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile, TextNormalizer
+from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
 from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
