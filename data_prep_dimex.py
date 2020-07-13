@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # (c) 2020 slegroux@ccrma.stanford.edu
 
+from data import DatasetSplit
 from data_dimex import DIMEX
 import argparse
+from IPython import embed
 
 
 if __name__ == "__main__":
@@ -14,4 +16,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dimex = DIMEX(args.input_dir, resample=args.resample, normalize=args.normalize)
-    dimex.export2kaldi(args.output_dir)
+    #dimex.export2kaldi(args.output_dir)
+
+    splitter = DatasetSplit(dimex)
+    tr_df, tst_df = splitter.split()
+    tr = DIMEX.init_from_df(tr_df)
+    tst = DIMEX.init_from_df(tst_df)
+    embed()
+    train.export2kaldi('/tmp/train')
+
