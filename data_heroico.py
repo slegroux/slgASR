@@ -7,11 +7,11 @@ from IPython import embed
 
 class HeroicoTranscripts(Transcript):
     def __init__(self, path):
-        Transcript.__init__(self, path, language='spanish', dialect='mexican')
+        Transcript.__init__(self, path, language='spanish', dialect='mexican', encoding='ISO-8859-1')
     
     @property
     def df(self):
-        df = pd.read_csv(self._path, encoding='iso-8859-1', sep='\t', header=None, names=['uid', 'transcript'])
+        df = pd.read_csv(self._path, encoding='ISO-8859-1', sep='\t', header=None, names=['uid', 'transcript'])
         df['language'] = [self._language]*len(df)
         df['dialect'] = [self._dialect]*len(df)
         df['path'] = [self._path]*len(df)

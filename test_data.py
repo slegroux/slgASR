@@ -3,7 +3,7 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile, TextNormalizer
+from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
 from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
@@ -87,12 +87,12 @@ def test_heroico_wav_files(heroico_data):
         1.9127437641723355, 'wav', 'spanish','mexican']
 
 def test_heroico_join(heroico_data):
-    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, 'recordings')
+    
     q = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
             {0}.dialect, {1}.path as transcript_path, {1}.transcript \
             from {0} join {1} on {0}.uid={1}.uid"
-    
-    recordings.query = q
+
+    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, query=q)
     assert recordings.df.transcript[0]  == 'iturbide se auto nombró generalísimo de mar y tierra'
 
 
@@ -115,6 +115,5 @@ def test_common_voice_df(common_voice_data):
 def test_to_kaldi(common_voice_data):
     ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
     ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
-
     ds.export2kaldi('/tmp/kaldi_dir')
     
