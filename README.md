@@ -3,6 +3,7 @@
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![made-with-VSCode](https://img.shields.io/badge/Made%20with-VSCode-1f425f.svg)](https://code.visualstudio.com/)
 [![Generic badge](https://img.shields.io/badge/Made%20for-Kaldi-1f425f.svg)](https://shields.io/)
+[![Build Status](https://travis-ci.com/slegroux/slgASR.svg?branch=master)](https://travis-ci.com/slegroux/slgASR)
 
 # slgASR
 repository of scripts useful for processing, training and testing speech recognition engines
