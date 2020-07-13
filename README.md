@@ -26,18 +26,18 @@ conda env create -f environment.yml
 
 ## Usage
 ```python
-    # commonvoice reference data path
-    common_voice_data = {
-        'path': 'data/tests/common_voice/test.tsv'
-    }
-    # column names in data
-    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    # get pandas style dataset with generic interface
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
-    # get dataset with specialized commonvoice dataset
-    cv = CommonVoiceDF(common_voice_data['path'])
-    # export to kaldi format
-    ds.export2kaldi('/tmp/kaldi_dir')
+# commonvoice reference data path
+common_voice_data = {
+    'path': 'data/tests/common_voice/test.tsv'
+}
+# column names in data
+ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
+# get pandas style dataset with generic interface
+ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
+# get dataset with specialized commonvoice dataset
+cv = CommonVoiceDF(common_voice_data['path'])
+# export to kaldi format
+ds.export2kaldi('/tmp/kaldi_dir')
 ```
 
 ## License
