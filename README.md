@@ -11,12 +11,15 @@
 repository of scripts useful for processing, training and testing speech recognition engines
 
 ## installation
-- depends on: pandas, spacy, pytorch
+- depends on: pandas, pandasql, pytorch, torchaudio and spacy
 - dependencies can be installed using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
 ``` bash
 cd slgASR
 conda env create -f environment.yml
 ```
+- pre-trained models from Spacy should be downloaded as such:
+    - python -m spacy download es_core_news_sm
+    - python -m spacy download en_core_web_sm
 
 ## Supported Datasets
 ### English
