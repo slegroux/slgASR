@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from IPython import embed
 from data import ASRDataset
 from data_heroico import HeroicoWavFile, HeroicoTranscripts
 from data_dimex import DimexWavFile, DimexTranscripts

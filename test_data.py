@@ -8,7 +8,6 @@ from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
 import numpy as np
-from IPython import embed
 
 DATA_FOLDER='data/tests'
 

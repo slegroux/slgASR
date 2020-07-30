@@ -8,7 +8,6 @@ import wave
 from abc import ABC, abstractmethod
 import uuid
 from pandasql import sqldf
-from IPython import embed
 import csv
 import string
 import spacy
@@ -209,7 +208,7 @@ class SpeechDataset(Dataset):
             os.mkdir(dir_path)
         except OSError as error:
             print(error)
-        # #embed()
+
         # kaldi needs uuid that starts by sid for sorting
         # http://kaldi-asr.org/doc/data_prep.html
         # convert uuid type to string to be able to add sid to it

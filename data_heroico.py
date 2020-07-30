@@ -2,8 +2,6 @@
 
 from data import WavFile, WavFiles, Transcript, get_basename
 import pandas as pd
-from IPython import embed
-
 
 class HeroicoTranscripts(Transcript):
     def __init__(self, path):

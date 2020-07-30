@@ -2,7 +2,6 @@
 from data import Transcript, WavFile, get_basename, ASRDataset
 import pandas as pd
 import glob, os
-from IPython import embed
 import uuid
 
 

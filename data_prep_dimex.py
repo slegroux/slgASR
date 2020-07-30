@@ -4,7 +4,6 @@
 from data import DatasetSplit
 from data_dimex import DIMEX
 import argparse
-from IPython import embed
 
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ from data import Transcript, WavFile, SpeechDataset, TextNormalizer
 import pandas as pd
 from pathlib import Path
 from pandasql import sqldf
-from IPython import embed
 import torchaudio
 
 
