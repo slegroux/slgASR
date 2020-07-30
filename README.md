@@ -11,8 +11,10 @@
 repository of scripts useful for processing, training and testing speech recognition engines
 
 ## installation
-dependencies can be installed using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
+- depends on: pandas, spacy, pytorch
+- dependencies can be installed using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
 ``` bash
+cd slgASR
 conda env create -f environment.yml
 ```
 
