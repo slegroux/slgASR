@@ -15,6 +15,7 @@ import sys
 import torchaudio
 from torch.utils.data import Dataset, random_split, DataLoader
 from IPython import embed
+import mutagen
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -173,11 +174,9 @@ class WavFile(object):
     @staticmethod
     def get_wav_info(filename:str):
         try:
-            with wave.open(filename, 'r') as f:
-                n_frames = f.getnframes()
-                frame_rate = f.getframerate()
-                duration  = n_frames / float(frame_rate)
-            return(frame_rate, duration)
+            info = torchaudio.info(filename)
+            duration = info[0].length / info[0].rate
+            return(info[0].rate, duration)
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             return(None,None)

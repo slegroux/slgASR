@@ -8,6 +8,7 @@ from data_dimex import DIMEX
 from data_heroico import HeroicoTranscripts, HeroicoWavFile
 from data_common_voice import CommonVoiceDF
 import numpy as np
+from IPython import embed
 
 DATA_FOLDER='data/tests'
 
@@ -17,6 +18,7 @@ def data_():
     data = {
         'root': DATA_FOLDER +'/dimex100',
         'wavfile': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/s05810.wav',
+        'mp3file': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/s05810.mp3',
         'transcript': DATA_FOLDER + '/dimex100/s058/texto/comunes/s05810.utf8'
         }
     return data
@@ -33,6 +35,15 @@ def test_wav_file(data_):
     w.gender = 'M'
     assert (w.path, w.sr, w.duration, w.language, w.dialect, w.gender) == \
         (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
+    #TODO add test for waveform 
+
+def test_mp3_file(data_):    
+    w = WavFile(data_['mp3file'])
+    w.language = 'fr'
+    w.dialect = 'CA'
+    w.gender = 'M'
+    assert (w.path, w.sr, w.duration, w.language, w.dialect, w.gender) == \
+        (data_['mp3file'], 16000, 3.636, 'fr', 'CA', 'M')
     #TODO add test for waveform 
 
 def test_text_normalizer(data_):
