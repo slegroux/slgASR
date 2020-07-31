@@ -14,6 +14,7 @@ import spacy
 import sys
 import torchaudio
 from torch.utils.data import Dataset, random_split, DataLoader
+from IPython import embed
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -309,10 +310,10 @@ class ASRDataset(object):
 
 
     @classmethod
-    def init_with_csv(cls, csv_path, ids, name='dataset', lang='english'):
+    def init_with_csv(cls, csv_path, ids, name='dataset', lang='english', prepend_audio_path=''):
         cls._csv_path = csv_path
         cls._ids = ids
-        cls._df =cls._get_df_from_csv(cls, cls._ids)
+        cls._df =cls._get_df_from_csv(cls, cls._ids, prepend_audio_path=prepend_audio_path)
         return(cls(None, None, None, None, name, lang))
 
     @property
@@ -340,12 +341,12 @@ class ASRDataset(object):
         self.add_uuid(joined)
         self.add_table_name(joined, self._name)
         return(joined)
-    
-    def _get_df_from_csv(self, ids, sep='\t', header=0, name='common_voice'):
-        
+
+    def _get_df_from_csv(self, ids, sep='\t', header=0, name='common_voice', prepend_audio_path=''):
         df = pd.read_csv(self._csv_path, sep=sep, header=header, names=ids)
         self.add_uuid(df)
         self.add_table_name(df, name)
+        df['audio_path'] = prepend_audio_path + '/' + df['audio_path']
         df['transcript_path'] = [os.path.abspath(self._csv_path)] * len(df)        
         df['duration'] = df['audio_path'].apply(lambda x: WavFile.get_wav_info(x)[1])
         self._df = df
