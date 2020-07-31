@@ -109,13 +109,14 @@ def test_heroico_join(heroico_data):
 @pytest.fixture(scope="module")
 def common_voice_data():
     data = {
-        'path': 'data/tests/common_voice/test.tsv'
+        'path': 'data/tests/common_voice/test.tsv',
+        'audio_path': 'data/tests/common_voice/clips_16k'
         }
     return(data)
 
 def test_get_df_from_csv(common_voice_data):
     ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
+    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', prepend_audio_path='')
     assert ds.df.iloc[0].transcript == 'pero en un lugar para nosotros solos,'
 
 def test_common_voice_df(common_voice_data):
@@ -124,6 +125,6 @@ def test_common_voice_df(common_voice_data):
 
 def test_to_kaldi(common_voice_data):
     ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice')
+    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', prepend_audio_path='/Users/syl20/Projects/slgASR')
     ds.export2kaldi('/tmp/kaldi_dir')
     

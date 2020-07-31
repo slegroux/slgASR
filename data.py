@@ -345,7 +345,8 @@ class ASRDataset(object):
         df = pd.read_csv(self._csv_path, sep=sep, header=header, names=ids)
         self.add_uuid(df)
         self.add_table_name(df, name)
-        df['audio_path'] = prepend_audio_path + '/' + df['audio_path']
+        if prepend_audio_path:
+            df['audio_path'] = prepend_audio_path + '/' + df['audio_path']
         df['transcript_path'] = [os.path.abspath(self._csv_path)] * len(df)        
         df['duration'] = df['audio_path'].apply(lambda x: WavFile.get_wav_info(x)[1])
         self._df = df
@@ -377,7 +378,7 @@ class ASRDataset(object):
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
    
 
-    def export2kaldi(self, dir_path, lang='english'):
+    def export2kaldi(self, dir_path, lang='english', sr=16000):
         try:
             os.mkdir(dir_path)
         except OSError as error:
@@ -389,10 +390,13 @@ class ASRDataset(object):
 
         self._df['uuid'] = self._df['uuid'].apply(lambda x: x.urn[9:])
         self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
-        wav_scp = self.df[['uuid', 'audio_path']]
+        # hard copy otherwise it's just a view and then cannot reassign col values
+        wav_scp = self.df[['uuid', 'audio_path']].copy()
+        wav_scp.audio_path = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
         utt2spk = self.df[['uuid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
+        embed()
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
 
