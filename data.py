@@ -15,7 +15,7 @@ import sys
 import torchaudio
 from torch.utils.data import Dataset, random_split, DataLoader
 from IPython import embed
-import mutagen
+
 
 def get_basename(filename:str):
     bn = os.path.splitext(os.path.basename(filename))
@@ -288,7 +288,7 @@ DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.du
             from {0} join {1} on {0}.uid={1}.uid and {0}.sid={1}.sid"
 
 class ASRDataset(object):
-    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='english', query=DEFAULT_QUERY):
+    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='en', query=DEFAULT_QUERY):
 
         self._audio_cls = audio_cls
         self._tr_cls = tr_cls
@@ -298,18 +298,17 @@ class ASRDataset(object):
         self._tr = None 
         self._name = name
         self._query = query
-        if lang=='spanish':
+        if lang=='es':
             self._nlp = spacy.load("es_core_news_sm")
-        elif lang=='english':
+        elif lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
         
         # check if variable is actually defined anywhere
         if not (hasattr(self, '_csv_path')):
             self._df = self._get_joined_df()
 
-
     @classmethod
-    def init_with_csv(cls, csv_path, ids, name='dataset', lang='english', prepend_audio_path=''):
+    def init_with_csv(cls, csv_path, ids, name='dataset', lang='en', prepend_audio_path=''):
         cls._csv_path = csv_path
         cls._ids = ids
         cls._df =cls._get_df_from_csv(cls, cls._ids, prepend_audio_path=prepend_audio_path)
@@ -396,7 +395,6 @@ class ASRDataset(object):
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
         utt2spk = self.df[['uuid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
-        embed()
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
         text = self._df[['uuid','transcript']]
 
