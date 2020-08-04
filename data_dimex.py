@@ -52,11 +52,11 @@ class DIMEX(ASRDataset):
         self._length = len(self._df)
     
     @classmethod
-    def init_from_df(cls, df):
+    def init_from_df(cls, df:pd.DataFrame):
         cls._df = df
         return()
 
-    def __getitem__(self, n):
+    def __getitem__(self, n:int)->(str, float, int, float, str):
         audio_path = str(self._df.iloc[n].audio_path)
         trn_path = str(self._df.iloc[n].transcript_path)
         uuid = str(self._df.iloc[n].uuid)
@@ -70,7 +70,7 @@ class DIMEX(ASRDataset):
     def __len__(self):
         return(self._length)
     
-    def export2kaldi(self, path):
+    def export2kaldi(self, path:str):
         super().export2kaldi(path, lang='es',sr=self._resample)
 
     @property
