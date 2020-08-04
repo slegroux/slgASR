@@ -30,47 +30,48 @@ def test_get_basename():
 
 def test_wav_file(data_):    
     w = WavFile(data_['wavfile'])
-    w.language = 'fr'
+    w.lang = 'fr'
     w.dialect = 'CA'
     w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.language, w.dialect, w.gender) == \
+    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
         (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
     #TODO add test for waveform 
 
 def test_mp3_file(data_):    
     w = WavFile(data_['mp3file'])
-    w.language = 'fr'
+    w.lang = 'fr'
     w.dialect = 'CA'
     w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.language, w.dialect, w.gender) == \
+    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
         (data_['mp3file'], 16000, 3.636, 'fr', 'CA', 'M')
     #TODO add test for waveform 
 
 def test_text_normalizer(data_):
     normalizer = TextNormalizer()
     assert normalizer.normalize('Hey!') == 'hey'
-    normalizer = TextNormalizer(language='es')
+    normalizer = TextNormalizer(lang='es')
     assert normalizer.normalize('Hola!') == 'hola'
 
 def test_transcript(data_):
-    normalizer = TextNormalizer('es')
-    t = Transcript(data_['transcript'], normalizer=normalizer)
+    t = Transcript(data_['transcript'], lang='es', normalize=True)
     t.encoding = 'utf-8'
-    t.language = 'es'
+    t.lang = 'es'
     t.dialect = 'MX'
     trans = t.transcript
     assert (trans == u"recopilación de firmas en contra de la extrema derecha de austria")
     assert t.path == data_['transcript']
-    assert (t.encoding, t.language, t.dialect) == ('utf-8', 'es', 'MX')
+    assert (t.encoding, t.lang, t.dialect) == ('utf-8', 'es', 'MX')
 
 def test_dimex(data_):
+    # normalize
     dimex = DIMEX(data_['root'], resample=8000, normalize=True)
-    assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
-        ('s058_s05810_comunes',8000, 3.5403125,'recopilación de firmas en contra de la extrema derecha de austria')
+    assert (dimex[0][2], dimex[0][3], dimex[0][4]) == \
+        (8000, 3.5403125,'recopilación de firmas en contra de la extrema derecha de austria')
     dimex = DIMEX(data_['root'], resample=8000, normalize=False)
-    assert (dimex[0][0], dimex[0][2], dimex[0][3], dimex[0][4]) == \
-        ('s058_s05810_comunes',8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
-    dimex.export2kaldi('/tmp/test2')
+    assert (dimex[0][2], dimex[0][3], dimex[0][4]) == \
+        (8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
+    
+    dimex.export2kaldi('/tmp/tutut')
 
 
 @pytest.fixture(scope="module")

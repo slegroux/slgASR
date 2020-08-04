@@ -5,12 +5,12 @@ import pandas as pd
 
 class HeroicoTranscripts(Transcript):
     def __init__(self, path):
-        Transcript.__init__(self, path, language='spanish', dialect='mexican', encoding='ISO-8859-1')
+        Transcript.__init__(self, path, lang='es', dialect='mexican', encoding='ISO-8859-1')
     
     @property
     def df(self):
         df = pd.read_csv(self._path, encoding='ISO-8859-1', sep='\t', header=None, names=['uid', 'transcript'])
-        df['language'] = [self._language]*len(df)
+        df['language'] = [self._lang]*len(df)
         df['dialect'] = [self._dialect]*len(df)
         df['path'] = [self._path]*len(df)
         if df['uid'].dtype == 'object':
@@ -24,7 +24,7 @@ class HeroicoTranscripts(Transcript):
 
 class HeroicoWavFile(WavFile):
     def __init__(self, path:str, suffix=''):
-        WavFile.__init__(self, path, language='spanish', dialect='mexican', suffix=suffix)
+        WavFile.__init__(self, path, lang='spanish', dialect='mexican', suffix=suffix)
     
     def _get_sid(self):
         return(self._path.split('/')[-2])

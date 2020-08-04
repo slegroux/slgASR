@@ -26,11 +26,11 @@ def get_basename(filename:str):
 
 
 class TextNormalizer(object):
-    def __init__(self, language:str='en'):
+    def __init__(self, lang:str='en'):
         #TODO check for other languages & add other normalization rules
-        if language=='es':
+        if lang=='es':
             self._nlp = spacy.load("es_core_news_sm")
-        elif language=='en':
+        elif lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
         self._text = None
         
@@ -49,12 +49,13 @@ class TextNormalizer(object):
 
 
 class Transcript(object):
-    def __init__(self, path:str, language='en', dialect='US', encoding='utf-8', normalizer=None):
+    def __init__(self, path:str, lang='en', dialect='US', encoding='utf-8', normalize=True):
         self._path = path
-        self._language = language
+        self._lang = lang
         self._dialect = dialect
         self._encoding = encoding
-        if normalizer:
+        if normalize:
+            normalizer = TextNormalizer(lang=lang)
             text = self.get_transcript(self.path)
             self._transcript = normalizer.normalize(text)
         else:
@@ -77,12 +78,12 @@ class Transcript(object):
         self._encoding = enc
     
     @property
-    def language(self):
-        return(self._language)
+    def lang(self):
+        return(self._lang)
     
-    @language.setter
-    def language(self, lang):
-        self._language = lang
+    @lang.setter
+    def lang(self, lang):
+        self._lang = lang
     
     @property
     def dialect(self):
@@ -99,14 +100,14 @@ class Transcript(object):
     # for e.g. normalization of transcript
     @transcript.setter
     def transcript(self, trn):
-        sef._transcript = trn
+        self._transcript = trn
 
 
 class WavFile(object):
-    def __init__(self, path:str, language='en', dialect='US', gender=None, suffix=''):
+    def __init__(self, path:str, lang='en', dialect='US', gender=None, suffix=''):
         self._path = path
         self._format = 'wav'
-        self._language = language
+        self._lang = lang
         self._dialect = dialect
         self._gender = None
         self._suffix = suffix
@@ -114,12 +115,12 @@ class WavFile(object):
         self._waveform, self._sample_rate = torchaudio.load(self._path)
     
     @property
-    def language(self):
-        return(self._language)
+    def lang(self):
+        return(self._lang)
 
-    @language.setter
-    def language(self, language):
-        self._language = language
+    @lang.setter
+    def lang(self, lang):
+        self._lang = lang
 
     @property
     def dialect(self):
@@ -202,7 +203,7 @@ class SpeechDataset(Dataset):
     def __len__(self):
         pass
 
-    def export2kaldi(self, dir_path:str, language:str='en', \
+    def export2kaldi(self, dir_path:str, lang:str='en', \
         dialect:str='US', encoding:str='utf-8', normalizer=None, resample:int=None):
         try:
             os.mkdir(dir_path)
@@ -229,7 +230,7 @@ class SpeechDataset(Dataset):
         utt2spk = self._ds[['uid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
 
-        self._ds['transcript'] = self._ds['transcript_path'].apply(lambda x: Transcript(x, language=language, dialect=dialect, encoding=encoding, normalizer=normalizer).transcript)
+        self._ds['transcript'] = self._ds['transcript_path'].apply(lambda x: Transcript(lang=lang, dialect=dialect, encoding=encoding, normalizer=normalizer).transcript)
         text = self._ds[['uid','transcript']]
 
         try:
@@ -278,7 +279,7 @@ class WavFiles(object):
     def df(self):
         d = lambda x: self._wf_cls(x)
         paths = [(d(x).uid, d(x).sid, d(x).path, d(x).sr, \
-            d(x).duration, d(x).format, d(x).language, d(x).dialect) for x in self._file_list]    
+            d(x).duration, d(x).format, d(x).lang, d(x).dialect) for x in self._file_list]    
         df = pd.DataFrame(paths, columns=['uid', 'sid', 'path', \
             'sr', 'duration', 'format', 'language','dialect'])
         return(df)
@@ -297,10 +298,11 @@ class ASRDataset(object):
         self._wav = None
         self._tr = None 
         self._name = name
+        self._lang = lang
         self._query = query
-        if lang=='es':
+        if self._lang=='es':
             self._nlp = spacy.load("es_core_news_sm")
-        elif lang=='en':
+        elif self._lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
         
         # check if variable is actually defined anywhere
@@ -377,7 +379,7 @@ class ASRDataset(object):
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
    
 
-    def export2kaldi(self, dir_path, lang='english', sr=16000):
+    def export2kaldi(self, dir_path, lang='en', sr=16000):
         try:
             os.mkdir(dir_path)
         except OSError as error:
@@ -396,6 +398,7 @@ class ASRDataset(object):
         utt2spk = self.df[['uuid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
         self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
+
         text = self._df[['uuid','transcript']]
 
         try:
