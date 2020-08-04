@@ -70,7 +70,7 @@ def test_dimex(data_):
     dimex = DIMEX(data_['root'], resample=8000, normalize=False)
     assert (dimex[0][2], dimex[0][3], dimex[0][4]) == \
         (8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
-    
+
     dimex.export2kaldi('/tmp/tutut')
 
 
@@ -117,8 +117,8 @@ def common_voice_data():
 
 def test_get_df_from_csv(common_voice_data):
     ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', lang='es', prepend_audio_path='')
-    assert ds.df.iloc[0].transcript == 'pero en un lugar para nosotros solos,'
+    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', lang='es', prepend_audio_path='', normalize=True)
+    assert ds.df.iloc[0].transcript == 'pero en un lugar para nosotros solos'
 
 def test_common_voice_df(common_voice_data):
     cv = CommonVoiceDF(common_voice_data['path'])
