@@ -8,5 +8,8 @@ dependencies:
   - pytest
   - pandasql
   - torchaudio
+  - ipython
+  - pylint
+  - pandarallel
 prefix: /Users/syl20/anaconda3/envs/slgasr
 

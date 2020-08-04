@@ -3,7 +3,7 @@ python:
   - "3.6" # current default Python on Travis CI
 # command to install dependencies
 install:
-  - pip install pandas numpy ipython pandasql spacy torch torchaudio
+  - pip install pandas numpy ipython pandasql spacy torchaudio pandarallel
   - python -m spacy download es_core_news_sm
   - python -m spacy download en_core_web_sm
 # command to run tests
