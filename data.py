@@ -15,6 +15,8 @@ import sys
 import torchaudio
 from torch.utils.data import Dataset, random_split, DataLoader
 from IPython import embed
+from pandarallel import pandarallel
+from multiprocessing import freeze_support
 
 
 def get_basename(filename:str):
@@ -289,7 +291,7 @@ DEFAULT_QUERY = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.du
             from {0} join {1} on {0}.uid={1}.uid and {0}.sid={1}.sid"
 
 class ASRDataset(object):
-    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='en', query=DEFAULT_QUERY):
+    def __init__(self, audio_path, tr_path, audio_cls, tr_cls, name='dataset', lang='en', query=DEFAULT_QUERY, normalize=False):
 
         self._audio_cls = audio_cls
         self._tr_cls = tr_cls
@@ -299,6 +301,7 @@ class ASRDataset(object):
         self._tr = None 
         self._name = name
         self._lang = lang
+        self._normalize = normalize
         self._query = query
         if self._lang=='es':
             self._nlp = spacy.load("es_core_news_sm")
@@ -310,11 +313,15 @@ class ASRDataset(object):
             self._df = self._get_joined_df()
 
     @classmethod
-    def init_with_csv(cls, csv_path, ids, name='dataset', lang='en', prepend_audio_path=''):
+    def init_with_csv(cls, csv_path, ids, name='dataset', lang='en', prepend_audio_path='', normalize=False):
         cls._csv_path = csv_path
         cls._ids = ids
         cls._df =cls._get_df_from_csv(cls, cls._ids, prepend_audio_path=prepend_audio_path)
-        return(cls(None, None, None, None, name, lang))
+        if normalize:
+            normalizer = TextNormalizer(lang)
+            pandarallel.initialize()
+            cls._df['transcript'] = cls._df['transcript'].apply(normalizer.normalize)
+        return(cls(None, None, None, None, name, lang, None, normalize))
 
     @property
     def wav(self):
@@ -348,6 +355,7 @@ class ASRDataset(object):
         self.add_table_name(df, name)
         if prepend_audio_path:
             df['audio_path'] = prepend_audio_path + '/' + df['audio_path']
+
         df['transcript_path'] = [os.path.abspath(self._csv_path)] * len(df)        
         df['duration'] = df['audio_path'].apply(lambda x: WavFile.get_wav_info(x)[1])
         self._df = df
@@ -397,7 +405,7 @@ class ASRDataset(object):
         wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
         utt2spk = self.df[['uuid','sid']]
         utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
-        self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
+        # self._df['transcript'] = self.df['transcript'].apply(lambda x: self.remove_punc(x))
 
         text = self._df[['uuid','transcript']]
 
@@ -407,5 +415,5 @@ class ASRDataset(object):
             print("File already exists. Delete or change path")
 
 
-if __name__ == "__main__":
-    pass    
+# if __name__ == "__main__":
+#     freeze_support()
