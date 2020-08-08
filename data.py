@@ -15,8 +15,8 @@ import sys
 import torchaudio
 from torch.utils.data import Dataset, random_split, DataLoader
 from IPython import embed
-from pandarallel import pandarallel
 from multiprocessing import freeze_support
+import swifter
 
 
 def get_basename(filename:str):
@@ -319,8 +319,9 @@ class ASRDataset(object):
         cls._df =cls._get_df_from_csv(cls, cls._ids, prepend_audio_path=prepend_audio_path)
         if normalize:
             normalizer = TextNormalizer(lang)
-            pandarallel.initialize()
-            cls._df['transcript'] = cls._df['transcript'].apply(normalizer.normalize)
+            cls._df['transcript'] = cls._df['transcript'].swifter.apply(normalizer.normalize)
+            # cls._df['transcript'] = cls._df['transcript'].apply(normalizer.normalize)
+
         return(cls(None, None, None, None, name, lang, None, normalize))
 
     @property

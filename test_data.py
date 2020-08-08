@@ -48,9 +48,9 @@ def test_mp3_file(data_):
 
 def test_text_normalizer(data_):
     normalizer = TextNormalizer()
-    assert normalizer.normalize('Hey!') == 'hey'
+    assert normalizer.normalize('¿ Hey!') == '¿ hey'
     normalizer = TextNormalizer(lang='es')
-    assert normalizer.normalize('Hola!') == 'hola'
+    assert normalizer.normalize('¿Hola!') == 'hola'
 
 def test_transcript(data_):
     t = Transcript(data_['transcript'], lang='es', normalize=True)
