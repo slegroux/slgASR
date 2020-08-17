@@ -3,14 +3,22 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
-from data_dimex import DIMEX
-from data_heroico import HeroicoTranscripts, HeroicoWavFile
-from data_common_voice import CommonVoiceDF
+# from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
+# from data_dimex import DIMEX
+# from data_heroico import HeroicoTranscripts, HeroicoWavFile
+# from data_common_voice import CommonVoiceDF
+from data import TextNormalizer, Audio, Transcript, Audios, Transcripts
 import numpy as np
 from IPython import embed
+from pathlib import Path
 
 DATA_FOLDER='data/tests'
+
+def test_text_normalizer():
+    normalizer = TextNormalizer()
+    assert normalizer.normalize('¿ HEY!') == '¿ hey'
+    normalizer = TextNormalizer(lang='es')
+    assert normalizer.normalize('¿Hola!') == 'hola'
 
 # fixture to init global variables
 @pytest.fixture(scope="module")
@@ -23,34 +31,21 @@ def data_():
         }
     return data
 
-# test WavFile class
-def test_get_basename():
-    bn = get_basename('/toto/test.txt.utf.totot')
-    assert bn == 'test'
-
-def test_wav_file(data_):    
-    w = WavFile(data_['wavfile'])
+def test_wav(data_):    
+    w = Audio(data_['wavfile'])
     w.lang = 'fr'
-    w.dialect = 'CA'
-    w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
-        (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
-    #TODO add test for waveform 
+    w.country = 'CA'
+    assert (w.path, w.sr, w.duration, w.lang, w.country) == \
+        (str(Path(data_['wavfile']).absolute()), 16000, 3.5403125, 'fr', 'CA')
 
-def test_mp3_file(data_):    
-    w = WavFile(data_['mp3file'])
+
+def test_mp3(data_):    
+    w = Audio(data_['mp3file'])
     w.lang = 'fr'
-    w.dialect = 'CA'
-    w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
-        (data_['mp3file'], 16000, 3.636, 'fr', 'CA', 'M')
-    #TODO add test for waveform 
+    w.country = 'CA'
+    assert (w.path, w.sr, w.duration, w.lang, w.country) == \
+        (str(Path(data_['mp3file']).absolute()), 16000, 3.636, 'fr', 'CA')
 
-def test_text_normalizer(data_):
-    normalizer = TextNormalizer()
-    assert normalizer.normalize('¿ Hey!') == '¿ hey'
-    normalizer = TextNormalizer(lang='es')
-    assert normalizer.normalize('¿Hola!') == 'hola'
 
 def test_transcript(data_):
     t = Transcript(data_['transcript'], lang='es', normalize=True)
