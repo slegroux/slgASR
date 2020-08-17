@@ -234,3 +234,7 @@ class ASRDatasetCSV(ASRDataset):
             df['text'] = df['text'].swifter.apply(normalizer.normalize)
 
         self._df = df
+    
+    @property
+    def df(self)->pd.DataFrame:
+        return(self._df)

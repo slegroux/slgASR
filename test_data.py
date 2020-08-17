@@ -83,24 +83,15 @@ def test_asr_dataset(data_):
     ds.export2kaldi('/tmp/kaldi_dimex')
 
 @pytest.fixture(scope="module")
-def common_voice_data():
+def csv_data():
     data = {
         'path': 'data/tests/common_voice/test.tsv',
         'audio_path': 'data/tests/common_voice/clips_16k'
         }
     return(data)
 
-def test_get_df_from_csv(common_voice_data):
-    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', lang='es', prepend_audio_path='', normalize=True)
-    assert ds.df.iloc[0].transcript == 'pero en un lugar para nosotros solos'
-
-def test_common_voice_df(common_voice_data):
-    cv = CommonVoiceDF(common_voice_data['path'])
-    assert cv.df.duration[0] == np.float64(3.168)
-
-def test_to_kaldi(common_voice_data):
-    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', prepend_audio_path='/Users/syl20/Projects/slgASR')
-    ds.export2kaldi('/tmp/kaldi_dir')
-    
+def test_csv(csv_data):
+    dataset = ASRDatasetCSV(csv_data['path'], lang='es', \
+        prepend_audio_path=str(Path(csv_data['audio_path']).absolute()))
+    assert dataset.df.iloc[0].text == 'pero en un lugar para nosotros solos'
+    dataset.export2kaldi(('/tmp/kaldi_csv'))
