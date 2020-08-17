@@ -56,7 +56,7 @@ class SpeechAsset():
     @country.setter
     def country(self, country:str):
         self._country = country
-        
+
     @property
     def id(self)->str:
         return(self._id)
@@ -71,10 +71,11 @@ class SpeechAsset():
 
 
 class Transcript(SpeechAsset):
-    def __init__(self, path:str, lang:str='en', country:str='US', normalize:bool=True, sid:str=None):
+    def __init__(self, path:str, lang:str='en', country:str='US', normalize:bool=True, sid:str=None, encoding='utf-8'):
         SpeechAsset.__init__(self,path=path, lang=lang, country=country, sid=sid)
         self._normalizer = TextNormalizer(self._lang)
-        with open(self._path) as f:
+        self._encoding = encoding
+        with open(self._path, encoding=self._encoding) as f:
             if normalize:
                 self._text = self._normalizer.normalize(f.readline().strip())
             else:
@@ -88,11 +89,16 @@ class Transcript(SpeechAsset):
                 'id': self._id,
                 'uuid': self._uuid,
                 'sid': self._sid,
+                'encoding': self._encoding,
                 }
 
     @property
     def text(self)->str:
         return(self._text)
+    
+    @property
+    def encoding(self)->str:
+        return(self._encoding)
     
 
 class Audio(SpeechAsset):
@@ -104,6 +110,7 @@ class Audio(SpeechAsset):
     def asdict(self):
         return {'data': self._data,
                 'sr': self._sr,
+                'duration': self._duration,
                 'path': str(self._path),
                 'lang': self._lang,
                 'country': self._country,
@@ -144,7 +151,7 @@ class Audio(SpeechAsset):
 
 
 class Transcripts(object):
-    def __init__(self, regex:str, normalize:bool=True, lang:str='en', country:str='US'):
+    def __init__(self, regex:str, normalize:bool=True, lang:str='en', country:str=None):
         self._paths = glob.glob(regex)
         # convert list of dicts into df
         self._transcripts = pd.DataFrame([Transcript(path, normalize=normalize, lang=lang, country=country).asdict() for path in self._paths])
@@ -166,7 +173,7 @@ class Audios(object):
 
 
 class ASRDataset():
-    def __init__(self, audios, transcripts, audio_cols=['id', 'sid', 'path', 'data', 'sr', 'lang', 'country'], transcripts_cols=['id','text','path'], join='id'):
+    def __init__(self, audios:pd.DataFrame, transcripts:pd.DataFrame, audio_cols=['id', 'sid', 'path', 'data', 'sr', 'lang', 'country'], transcripts_cols=['id','text','path'], join='id'):
         self._transcripts = transcripts
         self._audios = audios
         df = pd.merge(self._transcripts[transcripts_cols], self._audios[audio_cols], on='id')
