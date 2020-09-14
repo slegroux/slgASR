@@ -1,3 +1,5 @@
+# (c) 2020 Sylvain Le Groux <slegroux@ccrma.stanford.edu>
+
 from IPython import embed
 import glob
 from pathlib import Path
@@ -18,6 +20,8 @@ class TextNormalizer(object):
             self._nlp = spacy.load("es_core_news_sm") 
         elif self._lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
+        else:
+            raise Exception("language {} is not supported yet".format(self._lang))
         self._country = country
     
     def normalize(self, text:str)->str:
@@ -28,6 +32,7 @@ class TextNormalizer(object):
         doc = self._nlp(sentence)
         res = [(w.text, w.pos_) for w in doc]
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+
 
 class SpeechAsset():
     def __init__(self, path:str, lang:str='en', country:str='US', sid:str=None):
@@ -212,6 +217,7 @@ class ASRDataset():
     def dataset(self):
         return(self._df)
 
+
 class ASRDatasetCSV(ASRDataset):
     def __init__(self, path:str,
                 map:dict={'sid':'client_id','country':'accent','audio_path':'path','text':'sentence'},
@@ -228,6 +234,7 @@ class ASRDatasetCSV(ASRDataset):
 
         df.rename(columns=names, inplace=True)
         df['uuid'] = [str(uuid.uuid4()) for x in range(df.shape[0])]
+        df['audio_path'] = df['audio_path'].swifter.apply(lambda x: prepend_audio_path + '/' + x)
     
         if normalize:
             normalizer = TextNormalizer(lang)
