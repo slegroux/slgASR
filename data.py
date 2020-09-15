@@ -9,7 +9,9 @@ import pandas as pd
 import spacy
 import os
 import swifter
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 class TextNormalizer(object):
     def __init__(self, lang:str='en', country:str='US'):
@@ -32,7 +34,17 @@ class TextNormalizer(object):
         doc = self._nlp(sentence)
         res = [(w.text, w.pos_) for w in doc]
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
-
+    
+    @staticmethod
+    def remove_double_quote_from_file(filename:str):
+        try:
+            with open(filename, 'r+') as f:
+                t = f.read().replace('\"', '')
+                f.seek(0)
+                f.write(t)
+                f.truncate()
+        except IOError as e:
+            logging.error(e, exc_info=True)
 
 class SpeechAsset():
     def __init__(self, path:str, lang:str='en', country:str='US', sid:str=None):
@@ -141,7 +153,7 @@ class Audio(SpeechAsset):
         try:
             return(torchaudio.load(filename))
         except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            logging.exception(str(e))
             return(None,None)            
 
     @staticmethod
@@ -151,7 +163,7 @@ class Audio(SpeechAsset):
             duration = info[0].length / info[0].rate
             return(duration)
         except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            logging.exception(str(e))
             return(None)
 
 
@@ -187,36 +199,41 @@ class ASRDataset():
         self._df = df
     
     def export2kaldi(self, dir_path:str, sr:int=16000):
+        path = Path(dir_path)
         try:
-            os.mkdir(dir_path)
-        except OSError as error:
-            print(error)
+            path.mkdir(parents=True, exist_ok=False)
+        except FileExistsError as e:
+            logging.exception(str(e))
+        else:
+            logging.info("Folder created")
         
         # kaldi needs uuid that starts by sid for sorting
         # http://kaldi-asr.org/doc/data_prep.html
         # convert uuid type to string to be able to add sid to it
-
         self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
         # hard copy otherwise it's just a view and then cannot reassign col values
-
         wav_scp = self._df[['uuid', 'audio_path']].copy()
-
         wav_scp.audio_path = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
-
-        wav_scp.to_csv(dir_path + '/wav.scp', sep=' ', index=False, header=None)
-        utt2spk = self._df[['uuid','sid']]
-        utt2spk.to_csv(dir_path + '/utt2spk', sep=' ', index=False, header=None)
-        text = self._df[['uuid','text']]
-
         try:
-            text.to_csv(dir_path + '/text', sep=' ', index=False, header=None)
-        except IOError:
-            print("File already exists. Delete or change path")
+            wav_scp.to_csv(os.path.join(dir_path,'wav.scp'), sep=' ', index=False, header=None)
+            TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'wav.scp'))
+        except IOError as e:
+            logging.exception(str(e))
+        utt2spk = self._df[['uuid','sid']]
+        try:
+            utt2spk.to_csv(os.path.join(dir_path, 'utt2spk'), sep=' ', index=False, header=None)
+        except IOError as e:
+            logging.exception(str(e))
+        text = self._df[['uuid','text']]
+        try:
+            text.to_csv(os.path.join(dir_path, 'text'), sep=' ', index=False, header=None)
+            TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'text'))
+        except IOError as e:
+            logging.exception(str(e))
 
     @property
     def dataset(self):
         return(self._df)
-
 
 class ASRDatasetCSV(ASRDataset):
     def __init__(self, path:str,
