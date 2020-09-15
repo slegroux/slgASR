@@ -62,7 +62,7 @@ def test_transcripts(data_):
     t = Transcripts(data_['transcripts'], normalize=True, lang='es', country='MX')
     trn = t.transcripts
     assert trn.text[0] == u"recopilación de firmas en contra de la extrema derecha de austria"
-    assert trn.path[0] == str(Path('data/tests/dimex100/s058/texto/comunes/s05810.utf8').absolute())
+    assert trn.path[0] == str(Path(data_['transcript']).absolute())
     assert (trn.lang[0], trn.country[0]) == ('es', 'MX')
     assert trn.id[0] == 's05810'
     assert trn.encoding[0] == 'utf-8'
