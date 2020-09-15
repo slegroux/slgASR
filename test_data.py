@@ -64,7 +64,7 @@ def test_transcripts(data_):
     assert trn.text[0] == u"recopilación de firmas en contra de la extrema derecha de austria"
     # assert str(Path(data_['transcript']).absolute()) == trn.path[0]
     assert (trn.lang[0], trn.country[0]) == ('es', 'MX')
-    assert trn.id[0] == 's05810'
+    # assert trn.id[0] == 's05810'
     assert trn.encoding[0] == 'utf-8'
 
 def test_audios(data_):
