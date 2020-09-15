@@ -22,6 +22,12 @@ class TextNormalizer(object):
             self._nlp = spacy.load("es_core_news_sm") 
         elif self._lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
+        elif self._lang=='it':
+            self._nlp = spacy.load("it_core_news_sm")
+        elif self._lang=='pt':
+            self._nlp = spacy.load("pt_core_news_sm")
+        elif self._lang=='fr':
+            self._nlp = spacy.load("fr_core_news_sm")
         else:
             raise Exception("language {} is not supported yet".format(self._lang))
         self._country = country
