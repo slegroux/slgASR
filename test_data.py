@@ -3,14 +3,23 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
-from data_dimex import DIMEX
-from data_heroico import HeroicoTranscripts, HeroicoWavFile
-from data_common_voice import CommonVoiceDF
+# from data import get_basename, Transcript, WavFile, WavFiles, TextNormalizer, ASRDataset
+# from data_dimex import DIMEX
+# from data_heroico import HeroicoTranscripts, HeroicoWavFile
+# from data_common_voice import CommonVoiceDF
+from data import TextNormalizer, Audio, Transcript, Audios, Transcripts
+from data import ASRDataset, ASRDatasetCSV
 import numpy as np
 from IPython import embed
+from pathlib import Path
 
 DATA_FOLDER='data/tests'
+
+def test_text_normalizer():
+    normalizer = TextNormalizer()
+    assert normalizer.normalize('¿ HEY!') == '¿ hey'
+    normalizer = TextNormalizer(lang='es')
+    assert normalizer.normalize('¿Hola!') == 'hola'
 
 # fixture to init global variables
 @pytest.fixture(scope="module")
@@ -19,113 +28,70 @@ def data_():
         'root': DATA_FOLDER +'/dimex100',
         'wavfile': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/s05810.wav',
         'mp3file': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/s05810.mp3',
-        'transcript': DATA_FOLDER + '/dimex100/s058/texto/comunes/s05810.utf8'
+        'transcript': DATA_FOLDER + '/dimex100/s058/texto/comunes/s05810.utf8',
+        'transcripts': DATA_FOLDER + '/dimex100/s058/texto/comunes/*.utf8',
+        'audios': DATA_FOLDER + '/dimex100/s058/audio_editado/comunes/*.wav'
         }
     return data
 
-# test WavFile class
-def test_get_basename():
-    bn = get_basename('/toto/test.txt.utf.totot')
-    assert bn == 'test'
-
-def test_wav_file(data_):    
-    w = WavFile(data_['wavfile'])
+def test_wav(data_):    
+    w = Audio(data_['wavfile'])
     w.lang = 'fr'
-    w.dialect = 'CA'
-    w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
-        (data_['wavfile'], 16000, 3.5403125, 'fr', 'CA', 'M')
-    #TODO add test for waveform 
+    w.country = 'CA'
+    assert (w.path, w.sr, w.duration, w.lang, w.country) == \
+        (str(Path(data_['wavfile']).absolute()), 16000, 3.5403125, 'fr', 'CA')
 
-def test_mp3_file(data_):    
-    w = WavFile(data_['mp3file'])
+def test_mp3(data_):    
+    w = Audio(data_['mp3file'])
     w.lang = 'fr'
-    w.dialect = 'CA'
-    w.gender = 'M'
-    assert (w.path, w.sr, w.duration, w.lang, w.dialect, w.gender) == \
-        (data_['mp3file'], 16000, 3.636, 'fr', 'CA', 'M')
-    #TODO add test for waveform 
-
-def test_text_normalizer(data_):
-    normalizer = TextNormalizer()
-    assert normalizer.normalize('Hey!') == 'hey'
-    normalizer = TextNormalizer(lang='es')
-    assert normalizer.normalize('Hola!') == 'hola'
+    w.country = 'CA'
+    assert (w.path, w.sr, w.duration, w.lang, w.country) == \
+        (str(Path(data_['mp3file']).absolute()), 16000, 3.636, 'fr', 'CA')
 
 def test_transcript(data_):
-    t = Transcript(data_['transcript'], lang='es', normalize=True)
-    t.encoding = 'utf-8'
+    t = Transcript(data_['transcript'], lang='es', normalize=True, encoding='utf-8')
     t.lang = 'es'
-    t.dialect = 'MX'
-    trans = t.transcript
+    t.country = 'MX'
+    trans = t.text
     assert (trans == u"recopilación de firmas en contra de la extrema derecha de austria")
-    assert t.path == data_['transcript']
-    assert (t.encoding, t.lang, t.dialect) == ('utf-8', 'es', 'MX')
+    assert Path(t.path) == Path(data_['transcript']).resolve()
+    assert (t.encoding, t.lang, t.country) == ('utf-8', 'es', 'MX')
 
-def test_dimex(data_):
-    # normalize
-    dimex = DIMEX(data_['root'], resample=8000, normalize=True)
-    assert (dimex[0][2], dimex[0][3], dimex[0][4]) == \
-        (8000, 3.5403125,'recopilación de firmas en contra de la extrema derecha de austria')
-    dimex = DIMEX(data_['root'], resample=8000, normalize=False)
-    assert (dimex[0][2], dimex[0][3], dimex[0][4]) == \
-        (8000, 3.5403125,'Recopilación de firmas en contra de la extrema derecha de Austria.')
+def test_transcripts(data_):
+    # case where wav & trn ids are filename
+    t = Transcripts(data_['transcripts'], normalize=True, lang='es', country='MX')
+    trn = t.transcripts
+    assert trn.text[0] == u"recopilación de firmas en contra de la extrema derecha de austria"
+    # assert str(Path(data_['transcript']).absolute()) == trn.path[0]
+    assert (trn.lang[0], trn.country[0]) == ('es', 'MX')
+    # assert trn.id[0] == 's05810'
+    assert trn.encoding[0] == 'utf-8'
 
-    dimex.export2kaldi('/tmp/tutut')
+def test_audios(data_):
+    a = Audios(data_['audios'], lang='es', country='MX')
+    aa = a.audios
+    # assert Path(data_['wavfile']).resolve() == Path(aa.path[0])
+    assert aa.sr[0] == 16000
+    assert aa.duration[0] == 3.5403125
+    assert aa.lang[0] == 'es'
+    assert aa.country[0] == 'MX'
 
-
-@pytest.fixture(scope="module")
-def heroico_data():
-    data = {
-        'wavfile': DATA_FOLDER +'/heroico/speech/Recordings_Spanish/1/1.wav',
-        'regex_wavs_recordings': DATA_FOLDER +'/heroico/speech/Recordings_Spanish/*/*.wav',
-        'transcript': DATA_FOLDER +'/heroico/transcripts/heroico-recordings.txt'
-        }
-    return data
-
-def test_heroico_transcripts(heroico_data):
-    ht = HeroicoTranscripts(heroico_data['transcript']).df
-    assert ht.iloc[0].transcript == 'iturbide se auto nombró generalísimo de mar y tierra'
-
-def test_heroico_wav_file(heroico_data):
-    hfw = HeroicoWavFile(heroico_data['wavfile'])
-    assert (hfw.uid, hfw.sid, hfw.path) == ('1', '1', heroico_data['wavfile'])
-
-def test_heroico_wav_files(heroico_data):
-    heroico_df= WavFiles(heroico_data['regex_wavs_recordings'], HeroicoWavFile).df
-    assert heroico_df.iloc[0].values.tolist() == ['1', '1', \
-        DATA_FOLDER +'/heroico/speech/Recordings_Spanish/1/1.wav', 22050, \
-        1.9127437641723355, 'wav', 'spanish','mexican']
-
-def test_heroico_join(heroico_data):
-    
-    q = "select {0}.uid, {0}.path as audio_path, {0}.sid, {0}.sr, {0}.duration, {0}.format, {0}.language, \
-            {0}.dialect, {1}.path as transcript_path, {1}.transcript \
-            from {0} join {1} on {0}.uid={1}.uid"
-
-    recordings = ASRDataset(heroico_data['regex_wavs_recordings'], heroico_data['transcript'], HeroicoWavFile, HeroicoTranscripts, query=q)
-    assert recordings.df.transcript[0]  == 'iturbide se auto nombró generalísimo de mar y tierra'
-
+def test_asr_dataset(data_):
+    t = Transcripts(data_['transcripts'], normalize=True, lang='es', country='MX')
+    a = Audios(data_['audios'], lang='es', country='MX')
+    ds = ASRDataset(a.audios, t.transcripts)
+    ds.export2kaldi('/tmp/kaldi_dimex')
 
 @pytest.fixture(scope="module")
-def common_voice_data():
+def csv_data():
     data = {
         'path': 'data/tests/common_voice/test.tsv',
         'audio_path': 'data/tests/common_voice/clips_16k'
         }
     return(data)
 
-def test_get_df_from_csv(common_voice_data):
-    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', lang='es', prepend_audio_path='', normalize=True)
-    assert ds.df.iloc[0].transcript == 'pero en un lugar para nosotros solos'
-
-def test_common_voice_df(common_voice_data):
-    cv = CommonVoiceDF(common_voice_data['path'])
-    assert cv.df.duration[0] == np.float64(3.168)
-
-def test_to_kaldi(common_voice_data):
-    ids = ['sid', 'audio_path', 'transcript', 'up_votes', 'down_votes', 'age', 'gender', 'dialect']
-    ds = ASRDataset.init_with_csv(common_voice_data['path'], ids, name='common_voice', prepend_audio_path='/Users/syl20/Projects/slgASR')
-    ds.export2kaldi('/tmp/kaldi_dir')
-    
+def test_csv(csv_data):
+    dataset = ASRDatasetCSV(csv_data['path'], lang='es', \
+        prepend_audio_path=str(Path(csv_data['audio_path']).absolute()))
+    assert dataset.df.iloc[0].text == 'pero en un lugar para nosotros solos'
+    dataset.export2kaldi(('/tmp/kaldi_csv'))
