@@ -20,8 +20,13 @@ def format_es_commonvoice(src, dst, lang):
     audio_path = dataset_path / "clips"
     paths = {
         "train": dataset_path / "train.tsv",
+<<<<<<< HEAD
         # "dev": dataset_path / "dev.tsv",
         # "test": dataset_path / "test.tsv"
+=======
+        "dev": dataset_path / "dev.tsv",
+        "test": dataset_path / "test.tsv"
+>>>>>>> formatting
     }
 
     for k,v in paths.items():

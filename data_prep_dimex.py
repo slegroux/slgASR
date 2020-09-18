@@ -23,4 +23,3 @@ if __name__ == "__main__":
     tst = DIMEX.init_from_df(tst_df)
     embed()
     train.export2kaldi('/tmp/train')
-
