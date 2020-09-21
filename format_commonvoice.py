@@ -21,12 +21,17 @@ def format_es_commonvoice(src, dst, lang):
     paths = {
         "train": dataset_path / "train.tsv",
 <<<<<<< HEAD
+<<<<<<< HEAD
         # "dev": dataset_path / "dev.tsv",
         # "test": dataset_path / "test.tsv"
 =======
         "dev": dataset_path / "dev.tsv",
         "test": dataset_path / "test.tsv"
 >>>>>>> formatting
+=======
+        "dev": dataset_path / "dev.tsv",
+        "test": dataset_path / "test.tsv"
+>>>>>>> 57ef79e47a9bc4da3e4d4e5fb644c0e6c8382b79
     }
 
     for k,v in paths.items():
