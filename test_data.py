@@ -20,6 +20,12 @@ def test_text_normalizer():
     assert normalizer.normalize('¿ HEY!') == '¿ hey'
     normalizer = TextNormalizer(lang='es')
     assert normalizer.normalize('¿Hola!') == 'hola'
+    normalizer = TextNormalizer(lang='pt')
+    assert normalizer.normalize('que saudade!') == 'que saudade'
+    normalizer = TextNormalizer(lang='it')
+    assert normalizer.normalize('Scusi, che cosa ha detto?') == 'scusi che cosa ha detto'
+    normalizer = TextNormalizer(lang='fr')
+    assert normalizer.normalize('Ca roule ma poule?') == 'ca roule ma poule'
 
 # fixture to init global variables
 @pytest.fixture(scope="module")

@@ -12,19 +12,20 @@ from IPython import embed
 @click.command()
 @click.argument("src", default="/home/syl20/data/es/commonvoice")
 @click.argument("dst", default="/tmp/es/commonvoice")
-def format_es_commonvoice(src, dst):
+@click.option("--lang", default="es")
+def format_es_commonvoice(src, dst, lang):
     """Format commonvoice dataset into kaldi compatible data folder"""
     dataset_path = Path(src)
     formatted_dataset_path = Path(dst)
     audio_path = dataset_path / "clips"
     paths = {
         "train": dataset_path / "train.tsv",
-        "dev": dataset_path / "dev.tsv",
-        "test": dataset_path / "test.tsv"
+        # "dev": dataset_path / "dev.tsv",
+        # "test": dataset_path / "test.tsv"
     }
 
     for k,v in paths.items():
-        ds = ASRDatasetCSV(paths[k], lang="es", prepend_audio_path=str(audio_path.absolute()))
+        ds = ASRDatasetCSV(paths[k], lang=lang, prepend_audio_path=str(audio_path.absolute()))
         ds.export2kaldi(str(formatted_dataset_path / k))
 
 if __name__ == "__main__":
