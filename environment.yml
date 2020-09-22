@@ -2,14 +2,13 @@ name: slgasr
 channels:
   - defaults
 dependencies:
-  - spacy
   - pandas
-  - pytorch
   - pytest
   - pandasql
-  - torchaudio
   - ipython
+  - pytorch
+  - torchaudio
+  - sox
   - pylint
-  - pandarallel
-prefix: /Users/syl20/anaconda3/envs/slgasr
-
+  - click
+prefix: /home/syl20/anaconda3/envs/slgasr

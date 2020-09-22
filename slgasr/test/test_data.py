@@ -7,13 +7,13 @@ import pytest
 # from data_dimex import DIMEX
 # from data_heroico import HeroicoTranscripts, HeroicoWavFile
 # from data_common_voice import CommonVoiceDF
-from data import TextNormalizer, Audio, Transcript, Audios, Transcripts
-from data import ASRDataset, ASRDatasetCSV
+from slgasr.data import TextNormalizer, Audio, Transcript, Audios, Transcripts
+from slgasr.data import ASRDataset, ASRDatasetCSV
 import numpy as np
 from IPython import embed
 from pathlib import Path
 
-DATA_FOLDER='data/tests'
+DATA_FOLDER= str(Path(__file__).parent.parent / "data/tests")
 
 def test_text_normalizer():
     normalizer = TextNormalizer()
@@ -91,8 +91,8 @@ def test_asr_dataset(data_):
 @pytest.fixture(scope="module")
 def csv_data():
     data = {
-        'path': 'data/tests/common_voice/test.tsv',
-        'audio_path': 'data/tests/common_voice/clips_16k'
+        'path': DATA_FOLDER + '/common_voice/test.tsv',
+        'audio_path': DATA_FOLDER + '/common_voice/clips_16k'
         }
     return(data)
 

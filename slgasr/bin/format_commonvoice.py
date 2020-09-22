@@ -2,7 +2,7 @@
 # (c) 2020 slegroux@ccrma.stanford.edu
 
 import click
-from data import ASRDatasetCSV
+from slgasr.data import ASRDatasetCSV
 from pathlib import Path
 from IPython import embed
 
