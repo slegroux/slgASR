@@ -2,7 +2,7 @@
 # (c) 2020 slegroux@ccrma.stanford.edu
 
 import click
-from data import ASRDatasetCSV
+from slgasr.data import ASRDatasetCSV
 from pathlib import Path
 from IPython import embed
 
@@ -20,8 +20,8 @@ def format_es_commonvoice(src, dst, lang):
     audio_path = dataset_path / "clips"
     paths = {
         "train": dataset_path / "train.tsv",
-        # "dev": dataset_path / "dev.tsv",
-        # "test": dataset_path / "test.tsv"
+        "dev": dataset_path / "dev.tsv",
+        "test": dataset_path / "test.tsv"
     }
 
     for k,v in paths.items():

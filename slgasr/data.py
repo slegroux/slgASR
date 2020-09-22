@@ -219,7 +219,7 @@ class ASRDataset():
         self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
         # hard copy otherwise it's just a view and then cannot reassign col values
         wav_scp = self._df[['uuid', 'audio_path']].copy()
-        wav_scp.audio_path = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
         try:
             wav_scp.to_csv(os.path.join(dir_path,'wav.scp'), sep=' ', index=False, header=None)
             TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'wav.scp'))
