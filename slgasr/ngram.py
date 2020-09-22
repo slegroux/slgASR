@@ -11,7 +11,7 @@ from collections import Counter
 logger = logging.getLogger('language_modeling')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
-fh = logging.FileHandler('lm.log')
+fh = logging.FileHandler('logs/lm.log')
 fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()

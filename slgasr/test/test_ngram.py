@@ -28,6 +28,13 @@ def test_corpus(data):
         ['<s>', 'i', 'do', 'not', 'like', 'green', 'eggs', 'and', 'ham', '</s>']
     ]
 
+    c = Corpus(data['corpus'], add_bos=False, add_eos=False)
+    assert c.corpus == [
+        ['i', 'am', 'sam'],
+        ['sam', 'i', 'am'],
+        ['i', 'do', 'not', 'like', 'green', 'eggs', 'and', 'ham']
+    ]
+
 def test_vocab(data):
     c = Corpus(data['corpus'])
     assert c.vocab == {'eggs', 'sam', 'do', '</s>', 'like', 'not', 'green', 'ham', '<s>', 'and', 'i', 'am'}
