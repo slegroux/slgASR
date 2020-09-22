@@ -3,9 +3,10 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from slgasr.lm import Corpus, Unigram, Bigram
+from slgasr.ngram import Corpus, Unigram, Bigram
 from IPython import embed
 import os
+from pathlib import Path
 
 DATA_FOLDER= str(Path(__file__).parent.parent / "data/tests")
 
