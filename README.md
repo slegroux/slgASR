@@ -22,15 +22,16 @@ conda env create -f environment.yml
 - pre-trained models from Spacy should be downloaded as such:
     - python -m spacy download es_core_news_sm
     - python -m spacy download en_core_web_sm
-
-### Install module
+### Install module in develop mode with pip
 ``` bash
 pip install -e ./
+# or
+python setup.py develop
 ```
-
 ### Test / Examples
 ``` bash
-pytest --pyargs slgasr
+pytest -p no:warnings -sv --pyargs slgasr
+
 ```
 ## Supported Datasets
 ### English
