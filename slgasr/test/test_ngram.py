@@ -3,11 +3,11 @@
 # pytest -p no:warnings -svDATA_FOLDER +'.py
 
 import pytest
-from lm import Corpus, Unigram, Bigram
+from slgasr.lm import Corpus, Unigram, Bigram
 from IPython import embed
 import os
 
-DATA_FOLDER='data/tests'
+DATA_FOLDER= str(Path(__file__).parent.parent / "data/tests")
 
 # fixture to init global variables
 @pytest.fixture(scope="module")

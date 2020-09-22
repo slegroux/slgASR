@@ -23,6 +23,15 @@ conda env create -f environment.yml
     - python -m spacy download es_core_news_sm
     - python -m spacy download en_core_web_sm
 
+### Install module
+``` bash
+pip install -e ./
+```
+
+### Test / Examples
+``` bash
+pytest --pyargs slgasr
+```
 ## Supported Datasets
 ### English
 - commonvoice
