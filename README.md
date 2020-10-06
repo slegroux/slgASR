@@ -55,7 +55,7 @@ ds.export2kaldi('/tmp/kaldi_dir')
 [GPL](https://www.gnu.org/licenses/gpl-3.0-standalone.html)
 
 ## Authors
-(c) 2020 Sylvain Le Groux <slegroux@ccrma.stanford.edu>
+(c) 2020 **Sylvain Le Groux** (<slegroux@ccrma.stanford.edu>)
 
 
 
