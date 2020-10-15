@@ -184,6 +184,26 @@ class Transcripts(object):
         return(self._transcripts)
 
 
+class TranscriptsCSV(Transcripts):
+    def __init__(self, regex:str, normalize:bool=True, lang:str='en', country:str=None):
+        # Transcripts.__init__(self, regex=regex, normalize=normalize, lang=lang, country=country)
+        self._paths = glob.glob(regex)
+        self._transcripts = pd.DataFrame()
+
+        for path in self._paths:
+            tmp = pd.read_csv(path, header=None)
+            id = tmp.iloc[:,0].apply(lambda x: x.split()[0])
+            text = tmp.iloc[:,0].apply(lambda x: ' '.join(x.split()[1:]))
+            p = [path]*len(tmp)
+            tmp = pd.DataFrame({'id':id, 'text':text, 'path': p})
+
+            self._transcripts = self._transcripts.append(tmp)
+
+        if normalize:
+            normalizer = TextNormalizer(lang)
+            self._transcripts['text'] = self._transcripts['text'].swifter.apply(normalizer.normalize)
+
+
 class Audios(object):
     def __init__(self, regex:str, lang:str='en', country:str='US', sid_from_path=None):
         self._paths = glob.glob(regex)
@@ -221,6 +241,7 @@ class ASRDataset():
         # convert uuid type to string to be able to add sid to it
         self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
         # hard copy otherwise it's just a view and then cannot reassign col values
+
         wav_scp = self._df[['uuid', 'audio_path']].copy()
         wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
         try:

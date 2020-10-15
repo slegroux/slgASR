@@ -7,7 +7,7 @@ import pytest
 # from data_dimex import DIMEX
 # from data_heroico import HeroicoTranscripts, HeroicoWavFile
 # from data_common_voice import CommonVoiceDF
-from slgasr.data import TextNormalizer, Audio, Transcript, Audios, Transcripts
+from slgasr.data import TextNormalizer, Audio, Transcript, Audios, Transcripts, TranscriptsCSV
 from slgasr.data import ASRDataset, ASRDatasetCSV
 import numpy as np
 from IPython import embed
@@ -101,3 +101,21 @@ def test_csv(csv_data):
         prepend_audio_path=str(Path(csv_data['audio_path']).absolute()))
     assert dataset.df.iloc[0].text == 'pero en un lugar para nosotros solos'
     dataset.export2kaldi(('/tmp/kaldi_csv'))
+
+@pytest.fixture(scope="module")
+def libri_data():
+    data = {
+        'root': DATA_FOLDER +'/librispeech',
+        'transcripts': DATA_FOLDER + '/librispeech/*/*/*.trans.txt',
+        'audios': DATA_FOLDER + '/librispeech/*/*/*.flac'
+        }
+    return data
+
+def test_librispeech(libri_data):
+    a = Audios(libri_data['audios'], lang='en', country='US', sid_from_path=lambda x: Path(x).parents[1].name )
+    t = TranscriptsCSV(libri_data['transcripts'], normalize=True, lang='en', country='US')
+    ds = ASRDataset(a.audios, t.transcripts)
+    ds.export2kaldi('/tmp/kaldi_libri')
+
+
+    
