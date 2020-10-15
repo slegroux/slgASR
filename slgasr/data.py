@@ -197,7 +197,7 @@ class TranscriptsCSV(Transcripts):
             p = [path]*len(tmp)
             tmp = pd.DataFrame({'id':id, 'text':text, 'path': p})
 
-            self._transcripts = self._transcripts.append(tmp)
+            self._transcripts = self._transcripts.append(tmp, ignore_index=True)
 
         if normalize:
             normalizer = TextNormalizer(lang)
@@ -239,7 +239,7 @@ class ASRDataset():
         # kaldi needs uuid that starts by sid for sorting
         # http://kaldi-asr.org/doc/data_prep.html
         # convert uuid type to string to be able to add sid to it
-        self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
+        self._df['uuid'] = self._df['sid'] + '-' + self._df['uuid']
         # hard copy otherwise it's just a view and then cannot reassign col values
 
         wav_scp = self._df[['uuid', 'audio_path']].copy()
