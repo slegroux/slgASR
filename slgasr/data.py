@@ -185,10 +185,13 @@ class Transcripts(object):
 
 
 class Audios(object):
-    def __init__(self, regex:str, lang:str='en', country:str='US'):
+    def __init__(self, regex:str, lang:str='en', country:str='US', sid_from_path=None):
         self._paths = glob.glob(regex)
         # convert list of dicts into df
-        self._audios = pd.DataFrame([Audio(path, lang=lang, country=country).asdict() for path in self._paths])
+        if sid_from_path:
+            self._audios = pd.DataFrame([Audio(path, lang=lang, country=country, sid=sid_from_path(path)).asdict() for path in self._paths])
+        else:
+            self._audios = pd.DataFrame([Audio(path, lang=lang, country=country).asdict() for path in self._paths])
     
     @property
     def audios(self):
