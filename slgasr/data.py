@@ -227,7 +227,7 @@ class ASRDataset():
         df.rename(columns={'path_x':'transcript_path', 'path_y':'audio_path'}, inplace=True)
         self._df = df
     
-    def export2kaldi(self, dir_path:str, sr:int=16000):
+    def export2kaldi(self, dir_path:str, sr:int=16000, ext:str='wav'):
         path = Path(dir_path)
         try:
             path.mkdir(parents=True, exist_ok=False)
@@ -243,7 +243,10 @@ class ASRDataset():
         # hard copy otherwise it's just a view and then cannot reassign col values
 
         wav_scp = self._df[['uuid', 'audio_path']].copy()
-        wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        if ext == 'wav':
+            wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        elif ext == 'flac':
+            wav_scp['audio_path'] = 'flac -c -d -s --sample-rate ' + str(sr) + ' ' + wav_scp.audio_path + ' |'
         try:
             wav_scp.to_csv(os.path.join(dir_path,'wav.scp'), sep=' ', index=False, header=None)
             TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'wav.scp'))
