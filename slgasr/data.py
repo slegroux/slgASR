@@ -10,6 +10,7 @@ import spacy
 import os
 import swifter
 import logging
+import re
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -34,7 +35,17 @@ class TextNormalizer(object):
     
     def normalize(self, text:str)->str:
         text = self.remove_punc(text)
+        text = self.remove_brackets(text)
+        text = self.remove_extra_spaces(text)
         return(text)
+
+    def remove_brackets(self, sentence:str)->str:
+        pattern = r'\[.*?\]'
+        return(re.sub(pattern,'', sentence))
+    
+    def remove_extra_spaces(self, sentence:str)->str:
+        pattern = r'\s+'
+        return(re.sub(pattern,' ', sentence))
 
     def remove_punc(self, sentence:str)-> str:
         doc = self._nlp(sentence)
@@ -246,7 +257,8 @@ class ASRDataset():
         if ext == 'wav':
             wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
         elif ext == 'flac':
-            wav_scp['audio_path'] = 'flac -c -d -s --sample-rate ' + str(sr) + ' ' + wav_scp.audio_path + ' |'
+            # TODO(slg): check sr param for flac
+            wav_scp['audio_path'] = 'flac -c -d -s ' + wav_scp.audio_path + ' |'
         try:
             wav_scp.to_csv(os.path.join(dir_path,'wav.scp'), sep=' ', index=False, header=None)
             TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'wav.scp'))
@@ -274,23 +286,29 @@ class ASRDatasetCSV(ASRDataset):
                 sep:str='\t',
                 lang:str='en',
                 header:int=0,
+                skipinitialspace:bool=True,
                 name:str='common_voice',
                 prepend_audio_path:str='',
                 normalize:bool=True):
     
         self._csv_path = path
-        df = pd.read_csv(self._csv_path, sep=sep, header=header)
-        names = {value : key for (key, value) in map.items()}
 
+        df = pd.read_csv(self._csv_path, sep=sep, header=header, skipinitialspace=skipinitialspace)    
+        names = {value : key for (key, value) in map.items()}
         df.rename(columns=names, inplace=True)
+
         df['uuid'] = [str(uuid.uuid4()) for x in range(df.shape[0])]
         df['audio_path'] = df['audio_path'].swifter.apply(lambda x: prepend_audio_path + '/' + x)
-    
+
+        if 'sid' not in df.columns:
+            df['sid'] = df.audio_path.apply(lambda x: Path(x).parent.name)
+
         if normalize:
             normalizer = TextNormalizer(lang)
             df['text'] = df['text'].swifter.apply(normalizer.normalize)
 
         self._df = df
+
     
     @property
     def df(self)->pd.DataFrame:

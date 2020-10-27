@@ -89,6 +89,7 @@ def test_asr_dataset(data_):
     ds.export2kaldi('/tmp/kaldi_dimex')
 
 @pytest.fixture(scope="module")
+# header contains sid, country, audiopath & text info
 def csv_data():
     data = {
         'path': DATA_FOLDER + '/common_voice/test.tsv',
@@ -116,6 +117,23 @@ def test_librispeech(libri_data):
     t = TranscriptsCSV(libri_data['transcripts'], normalize=True, lang='en', country='US')
     ds = ASRDataset(a.audios, t.transcripts)
     ds.export2kaldi('/tmp/kaldi_libri')
+
+@pytest.fixture(scope="module")
+# no header, just 2 cols: audiopath & text
+def es_webex_data():
+    data = {
+        'root': DATA_FOLDER +'/es_webex',
+        'path': DATA_FOLDER + '/es_webex/trans.csv',
+        'audio_path': DATA_FOLDER + '/es_webex/flac'
+        }
+    return data
+
+def test_es_webex(es_webex_data):
+    map = {'sid':0, 'audio_path': 0, 'text': 1}
+    dataset = ASRDatasetCSV(es_webex_data['path'], map=map, lang='es', sep=',', header=None, name='es_webex', \
+        prepend_audio_path=str(Path(es_webex_data['audio_path']).absolute()))
+
+    dataset.export2kaldi('/tmp/es_webex', sr=16000, ext='flac')
 
 
     
