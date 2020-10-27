@@ -293,7 +293,8 @@ class ASRDatasetCSV(ASRDataset):
     
         self._csv_path = path
 
-        df = pd.read_csv(self._csv_path, sep=sep, header=header, skipinitialspace=skipinitialspace)    
+
+        df = pd.read_csv(self._csv_path, sep=sep, header=header, skipinitialspace=skipinitialspace, error_bad_lines=False)    
         names = {value : key for (key, value) in map.items()}
         df.rename(columns=names, inplace=True)
 
@@ -306,6 +307,8 @@ class ASRDatasetCSV(ASRDataset):
         if normalize:
             normalizer = TextNormalizer(lang)
             df['text'] = df['text'].swifter.apply(normalizer.normalize)
+
+
 
         self._df = df
 
