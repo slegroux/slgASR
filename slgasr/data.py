@@ -11,6 +11,7 @@ import os
 import swifter
 import logging
 import re
+import enchant
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -21,22 +22,28 @@ class TextNormalizer(object):
         self._lang = lang
         if self._lang=='es':
             self._nlp = spacy.load("es_core_news_sm") 
+            self._dictionary = enchant.Dict("es_ES")
         elif self._lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
+            self._dictionary = enchant.Dict("en_US")
         elif self._lang=='it':
             self._nlp = spacy.load("it_core_news_sm")
         elif self._lang=='pt':
             self._nlp = spacy.load("pt_core_news_sm")
         elif self._lang=='fr':
             self._nlp = spacy.load("fr_core_news_sm")
+            self._dictionary = enchant.Dict("fr_FR")
         else:
             raise Exception("language {} is not supported yet".format(self._lang))
         self._country = country
     
     def normalize(self, text:str)->str:
-        text = self.remove_punc(text)
         text = self.remove_brackets(text)
+        text = self.remove_newline(text)
+        text = self.remove_punc(text)
         text = self.remove_extra_spaces(text)
+        text = text.lstrip()
+        text = self.reformat_abbv(text)
         return(text)
 
     def remove_brackets(self, sentence:str)->str:
@@ -46,6 +53,14 @@ class TextNormalizer(object):
     def remove_extra_spaces(self, sentence:str)->str:
         pattern = r'\s+'
         return(re.sub(pattern,' ', sentence))
+    
+    def remove_newline(self, sentence:str)->str:
+        pattern = r'\\n'
+        return(re.sub(pattern, '', sentence))
+    
+    def reformat_abbv(self, sentence:str)->str:
+        pattern = r'\. _'
+        return(re.sub(pattern, '._', sentence))
 
     def remove_punc(self, sentence:str)-> str:
         doc = self._nlp(sentence)
@@ -307,8 +322,10 @@ class ASRDatasetCSV(ASRDataset):
         if normalize:
             normalizer = TextNormalizer(lang)
             df['text'] = df['text'].swifter.apply(normalizer.normalize)
-
-
+        
+        df = df.drop_duplicates(subset=['text','sid'])
+        df.replace("",float("NaN"), inplace=True)
+        df.dropna(subset=['text'],inplace=True)
 
         self._df = df
 
