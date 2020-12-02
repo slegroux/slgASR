@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-# to run tests:
-# pytest -p no:warnings -svDATA_FOLDER +'.py
+# (c) 2020 Sylvain Le Groux <slegroux@ccrma.stanford.edu>
 
 import pytest
 from slgasr.ngram import Corpus, Unigram, Bigram
