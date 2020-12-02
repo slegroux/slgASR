@@ -26,6 +26,7 @@ def test_text_normalizer():
     assert normalizer.normalize('Scusi, che cosa ha detto?') == 'scusi che cosa ha detto'
     normalizer = TextNormalizer(lang='fr')
     assert normalizer.normalize('Ca roule ma poule?') == 'ca roule ma poule'
+    # "[Silence] \n[Speaker 1] Que pena Jaime, es que tuve [partial sentence] eh, perdón, que pena Javier, es que estoy aquí con Jaime, con un compañero.\n[Speaker 2] Ah, todo bien.\n[Sepaker 1] ¿[Crosstalk] un minuto?"
 
 # fixture to init global variables
 @pytest.fixture(scope="module")

@@ -44,6 +44,7 @@ class TextNormalizer(object):
         text = self.remove_extra_spaces(text)
         text = text.lstrip()
         text = self.reformat_abbv(text)
+        text = self.remove_foreign_language(text,length=10)
         return(text)
 
     def remove_brackets(self, sentence:str)->str:
@@ -66,6 +67,22 @@ class TextNormalizer(object):
         doc = self._nlp(sentence)
         res = [(w.text, w.pos_) for w in doc]
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+    
+    def remove_foreign_language(self, sentence:str, length:int=10)-> str:
+        buffer = []
+        for word in sentence.split():
+            if not self._dictionary.check(word):
+                buffer.append(word)
+                if len(buffer) > length:
+                    return("")
+        return(sentence)
+
+    def remove_en_language(self, sentence:str)-> str:
+        d = enchant.Dict("en_US")
+        for word in sentence.split():
+            if d.check(word):
+                return("")
+        return(sentence)
     
     @staticmethod
     def remove_double_quote_from_file(filename:str):
@@ -308,7 +325,6 @@ class ASRDatasetCSV(ASRDataset):
     
         self._csv_path = path
 
-
         df = pd.read_csv(self._csv_path, sep=sep, header=header, skipinitialspace=skipinitialspace, error_bad_lines=False)    
         names = {value : key for (key, value) in map.items()}
         df.rename(columns=names, inplace=True)
@@ -326,9 +342,7 @@ class ASRDatasetCSV(ASRDataset):
         df = df.drop_duplicates(subset=['text','sid'])
         df.replace("",float("NaN"), inplace=True)
         df.dropna(subset=['text'],inplace=True)
-
         self._df = df
-
     
     @property
     def df(self)->pd.DataFrame:
