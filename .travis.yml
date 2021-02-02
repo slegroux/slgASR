@@ -3,7 +3,9 @@ python:
   - "3.6" # current default Python on Travis CI
 # command to install dependencies
 install:
-  - pip install pandas numpy ipython spacy torchaudio swifter
+  - sudo apt-get install aspell aspell-en aspell-es aspell-fr aspell-it aspell-pt
+  - sudo apt-get install -y enchant
+  - pip install pandas numpy ipython spacy torchaudio swifter pyenchant
   - python -m spacy download es_core_news_sm
   - python -m spacy download it_core_news_sm
   - python -m spacy download pt_core_news_sm
@@ -11,5 +13,5 @@ install:
   - python -m spacy download en_core_web_sm
 # command to run tests
 script:
-  - pytest -p no:warnings -sv slgasr/test/test_data.py
+  - pytest -p no:warnings -sv --pyargs slgasr/test/test_data.py
 

@@ -10,6 +10,8 @@ import spacy
 import os
 import swifter
 import logging
+import re
+import enchant
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -20,26 +22,69 @@ class TextNormalizer(object):
         self._lang = lang
         if self._lang=='es':
             self._nlp = spacy.load("es_core_news_sm") 
+            self._dictionary = enchant.Dict("es_ES")
         elif self._lang=='en':
             self._nlp = spacy.load("en_core_web_sm")
+            self._dictionary = enchant.Dict("en_US")
         elif self._lang=='it':
             self._nlp = spacy.load("it_core_news_sm")
+            self._dictionary = enchant.Dict("it")
         elif self._lang=='pt':
             self._nlp = spacy.load("pt_core_news_sm")
+            self._dictionary = enchant.Dict("pt_BR")
         elif self._lang=='fr':
             self._nlp = spacy.load("fr_core_news_sm")
+            self._dictionary = enchant.Dict("fr_FR")
         else:
             raise Exception("language {} is not supported yet".format(self._lang))
         self._country = country
     
     def normalize(self, text:str)->str:
+        text = self.remove_brackets(text)
+        text = self.remove_newline(text)
         text = self.remove_punc(text)
+        text = self.remove_extra_spaces(text)
+        text = text.lstrip()
+        text = self.reformat_abbv(text)
+        text = self.remove_foreign_language(text,length=10)
         return(text)
+
+    def remove_brackets(self, sentence:str)->str:
+        pattern = r'\[.*?\]'
+        return(re.sub(pattern,'', sentence))
+    
+    def remove_extra_spaces(self, sentence:str)->str:
+        pattern = r'\s+'
+        return(re.sub(pattern,' ', sentence))
+    
+    def remove_newline(self, sentence:str)->str:
+        pattern = r'\\n'
+        return(re.sub(pattern, '', sentence))
+    
+    def reformat_abbv(self, sentence:str)->str:
+        pattern = r'\. _'
+        return(re.sub(pattern, '._', sentence))
 
     def remove_punc(self, sentence:str)-> str:
         doc = self._nlp(sentence)
         res = [(w.text, w.pos_) for w in doc]
         return(' '.join([w.lower() for w,att  in res if att!= 'PUNCT']))
+    
+    def remove_foreign_language(self, sentence:str, length:int=10)-> str:
+        buffer = []
+        for word in sentence.split():
+            if not self._dictionary.check(word):
+                buffer.append(word)
+                if len(buffer) > length:
+                    return("")
+        return(sentence)
+
+    def remove_en_language(self, sentence:str)-> str:
+        d = enchant.Dict("en_US")
+        for word in sentence.split():
+            if d.check(word):
+                return("")
+        return(sentence)
     
     @staticmethod
     def remove_double_quote_from_file(filename:str):
@@ -184,11 +229,34 @@ class Transcripts(object):
         return(self._transcripts)
 
 
+class TranscriptsCSV(Transcripts):
+    def __init__(self, regex:str, normalize:bool=True, lang:str='en', country:str=None):
+        # Transcripts.__init__(self, regex=regex, normalize=normalize, lang=lang, country=country)
+        self._paths = glob.glob(regex)
+        self._transcripts = pd.DataFrame()
+
+        for path in self._paths:
+            tmp = pd.read_csv(path, header=None)
+            id = tmp.iloc[:,0].apply(lambda x: x.split()[0])
+            text = tmp.iloc[:,0].apply(lambda x: ' '.join(x.split()[1:]))
+            p = [path]*len(tmp)
+            tmp = pd.DataFrame({'id':id, 'text':text, 'path': p})
+
+            self._transcripts = self._transcripts.append(tmp, ignore_index=True)
+
+        if normalize:
+            normalizer = TextNormalizer(lang)
+            self._transcripts['text'] = self._transcripts['text'].swifter.apply(normalizer.normalize)
+
+
 class Audios(object):
-    def __init__(self, regex:str, lang:str='en', country:str='US'):
+    def __init__(self, regex:str, lang:str='en', country:str='US', sid_from_path=None):
         self._paths = glob.glob(regex)
         # convert list of dicts into df
-        self._audios = pd.DataFrame([Audio(path, lang=lang, country=country).asdict() for path in self._paths])
+        if sid_from_path:
+            self._audios = pd.DataFrame([Audio(path, lang=lang, country=country, sid=sid_from_path(path)).asdict() for path in self._paths])
+        else:
+            self._audios = pd.DataFrame([Audio(path, lang=lang, country=country).asdict() for path in self._paths])
     
     @property
     def audios(self):
@@ -204,7 +272,7 @@ class ASRDataset():
         df.rename(columns={'path_x':'transcript_path', 'path_y':'audio_path'}, inplace=True)
         self._df = df
     
-    def export2kaldi(self, dir_path:str, sr:int=16000):
+    def export2kaldi(self, dir_path:str, sr:int=16000, ext:str='wav'):
         path = Path(dir_path)
         try:
             path.mkdir(parents=True, exist_ok=False)
@@ -216,10 +284,17 @@ class ASRDataset():
         # kaldi needs uuid that starts by sid for sorting
         # http://kaldi-asr.org/doc/data_prep.html
         # convert uuid type to string to be able to add sid to it
-        self._df['uuid'] = self._df['sid'] + '_' + self._df['uuid']
+        self._df['uuid'] = self._df['sid'] + '-' + self._df['uuid']
         # hard copy otherwise it's just a view and then cannot reassign col values
+
         wav_scp = self._df[['uuid', 'audio_path']].copy()
-        wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        if ext == 'wav':
+            wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        elif ext == 'sph':
+            wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        elif ext == 'flac':
+            # TODO(slg): check sr param for flac
+            wav_scp['audio_path'] = 'flac -c -d -s ' + wav_scp.audio_path + ' |'
         try:
             wav_scp.to_csv(os.path.join(dir_path,'wav.scp'), sep=' ', index=False, header=None)
             TextNormalizer.remove_double_quote_from_file(os.path.join(dir_path,'wav.scp'))
@@ -247,22 +322,30 @@ class ASRDatasetCSV(ASRDataset):
                 sep:str='\t',
                 lang:str='en',
                 header:int=0,
+                skipinitialspace:bool=True,
                 name:str='common_voice',
                 prepend_audio_path:str='',
                 normalize:bool=True):
     
         self._csv_path = path
-        df = pd.read_csv(self._csv_path, sep=sep, header=header)
-        names = {value : key for (key, value) in map.items()}
 
+        df = pd.read_csv(self._csv_path, sep=sep, header=header, skipinitialspace=skipinitialspace, error_bad_lines=False)    
+        names = {value : key for (key, value) in map.items()}
         df.rename(columns=names, inplace=True)
+
         df['uuid'] = [str(uuid.uuid4()) for x in range(df.shape[0])]
         df['audio_path'] = df['audio_path'].swifter.apply(lambda x: prepend_audio_path + '/' + x)
-    
+
+        if 'sid' not in df.columns:
+            df['sid'] = df.audio_path.apply(lambda x: Path(x).parent.name)
+
         if normalize:
             normalizer = TextNormalizer(lang)
             df['text'] = df['text'].swifter.apply(normalizer.normalize)
-
+        
+        df = df.drop_duplicates(subset=['text','sid'])
+        df.replace("",float("NaN"), inplace=True)
+        df.dropna(subset=['text'],inplace=True)
         self._df = df
     
     @property

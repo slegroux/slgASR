@@ -7,7 +7,7 @@ import pytest
 # from data_dimex import DIMEX
 # from data_heroico import HeroicoTranscripts, HeroicoWavFile
 # from data_common_voice import CommonVoiceDF
-from slgasr.data import TextNormalizer, Audio, Transcript, Audios, Transcripts
+from slgasr.data import TextNormalizer, Audio, Transcript, Audios, Transcripts, TranscriptsCSV
 from slgasr.data import ASRDataset, ASRDatasetCSV
 import numpy as np
 from IPython import embed
@@ -26,6 +26,7 @@ def test_text_normalizer():
     assert normalizer.normalize('Scusi, che cosa ha detto?') == 'scusi che cosa ha detto'
     normalizer = TextNormalizer(lang='fr')
     assert normalizer.normalize('Ca roule ma poule?') == 'ca roule ma poule'
+    # "[Silence] \n[Speaker 1] Que pena Jaime, es que tuve [partial sentence] eh, perdón, que pena Javier, es que estoy aquí con Jaime, con un compañero.\n[Speaker 2] Ah, todo bien.\n[Sepaker 1] ¿[Crosstalk] un minuto?"
 
 # fixture to init global variables
 @pytest.fixture(scope="module")
@@ -89,6 +90,7 @@ def test_asr_dataset(data_):
     ds.export2kaldi('/tmp/kaldi_dimex')
 
 @pytest.fixture(scope="module")
+# header contains sid, country, audiopath & text info
 def csv_data():
     data = {
         'path': DATA_FOLDER + '/common_voice/test.tsv',
@@ -101,3 +103,36 @@ def test_csv(csv_data):
         prepend_audio_path=str(Path(csv_data['audio_path']).absolute()))
     assert dataset.df.iloc[0].text == 'pero en un lugar para nosotros solos'
     dataset.export2kaldi(('/tmp/kaldi_csv'))
+
+@pytest.fixture(scope="module")
+def libri_data():
+    data = {
+        'root': DATA_FOLDER +'/librispeech',
+        'transcripts': DATA_FOLDER + '/librispeech/*/*/*.trans.txt',
+        'audios': DATA_FOLDER + '/librispeech/*/*/*.flac'
+        }
+    return data
+
+def test_librispeech(libri_data):
+    a = Audios(libri_data['audios'], lang='en', country='US', sid_from_path=lambda x: Path(x).parents[1].name )
+    t = TranscriptsCSV(libri_data['transcripts'], normalize=True, lang='en', country='US')
+    ds = ASRDataset(a.audios, t.transcripts)
+    ds.export2kaldi('/tmp/kaldi_libri')
+
+@pytest.fixture(scope="module")
+# no header, just 2 cols: audiopath & text
+def es_webex_data():
+    data = {
+        'root': DATA_FOLDER +'/es_webex',
+        'path': DATA_FOLDER + '/es_webex/trans.csv',
+        'audio_path': DATA_FOLDER + '/es_webex/flac'
+        }
+    return data
+
+def test_es_webex(es_webex_data):
+    map = {'sid':0, 'audio_path': 0, 'text': 1}
+    dataset = ASRDatasetCSV(es_webex_data['path'], map=map, lang='es', sep=',', header=None, name='es_webex', \
+        prepend_audio_path=str(Path(es_webex_data['audio_path']).absolute()))
+
+    dataset.export2kaldi('/tmp/es_webex', sr=16000, ext='flac')
+
