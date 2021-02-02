@@ -28,8 +28,10 @@ class TextNormalizer(object):
             self._dictionary = enchant.Dict("en_US")
         elif self._lang=='it':
             self._nlp = spacy.load("it_core_news_sm")
+            self._dictionary = enchant.Dict("it")
         elif self._lang=='pt':
             self._nlp = spacy.load("pt_core_news_sm")
+            self._dictionary = enchant.Dict("pt_BR")
         elif self._lang=='fr':
             self._nlp = spacy.load("fr_core_news_sm")
             self._dictionary = enchant.Dict("fr_FR")
@@ -287,6 +289,8 @@ class ASRDataset():
 
         wav_scp = self._df[['uuid', 'audio_path']].copy()
         if ext == 'wav':
+            wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
+        elif ext == 'sph':
             wav_scp['audio_path'] = 'sox ' + wav_scp.audio_path + ' -t wav -r ' + str(sr) + ' -c 1 -b 16 - |'
         elif ext == 'flac':
             # TODO(slg): check sr param for flac
